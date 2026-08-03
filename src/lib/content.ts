@@ -1,3 +1,5 @@
+import { bundledScreenshots } from '@/lib/app-screens'
+import { getSetting } from '@/lib/settings'
 import { createClient } from '@/lib/supabase/server'
 
 /** Row shapes for the `web_*` content tables the public site reads. */
@@ -127,6 +129,14 @@ export async function getHighlightFeatures(): Promise<Feature[]> {
   return (data as Feature[]) ?? []
 }
 
+/**
+ * Falls back to the screenshots bundled with the site (`src/lib/app-screens.ts`)
+ * while `web_screenshots` is still empty, so the gallery is never blank. Adding
+ * even one row in Admin -> Screenshots replaces the whole bundled set.
+ *
+ * While the bundled set is in use, the ones switched off in
+ * Admin -> Screenshots (the `screens` settings row) are left out.
+ */
 export async function getScreenshots(): Promise<Screenshot[]> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -134,7 +144,12 @@ export async function getScreenshots(): Promise<Screenshot[]> {
     .select('*')
     .eq('is_active', true)
     .order('sort_order')
-  return (data as Screenshot[]) ?? []
+  const rows = (data as Screenshot[]) ?? []
+  if (rows.length > 0) return rows
+
+  const { hidden } = await getSetting('screens')
+  const off = new Set(hidden)
+  return bundledScreenshots.filter((shot) => !off.has(shot.id))
 }
 
 export async function getFaqs(): Promise<Faq[]> {

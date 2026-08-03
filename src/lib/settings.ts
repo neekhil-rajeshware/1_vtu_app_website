@@ -1,3 +1,4 @@
+import { defaultHiddenScreens } from '@/lib/app-screens'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -86,6 +87,14 @@ export type AdsTxtSettings = {
   content: string
 }
 
+/**
+ * Which of the screenshots bundled with the site are switched off. Ids come
+ * from `src/lib/app-screens.ts`; anything not listed here is shown.
+ */
+export type ScreensSettings = {
+  hidden: string[]
+}
+
 export type AllSettings = {
   site: SiteSettings
   hero: HeroSettings
@@ -97,6 +106,7 @@ export type AllSettings = {
   footer: FooterSettings
   about: AboutSettings
   adstxt: AdsTxtSettings
+  screens: ScreensSettings
 }
 
 /**
@@ -137,6 +147,7 @@ export const FALLBACK_SETTINGS: AllSettings = {
   footer: { description: '', disclaimer: '', copyright: 'OneVTU' },
   about: { heading: '', story: '', mission: '' },
   adstxt: { content: '' },
+  screens: { hidden: defaultHiddenScreens },
 }
 
 export async function getSettings(): Promise<AllSettings> {

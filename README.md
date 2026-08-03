@@ -107,10 +107,40 @@ src/app/admin/         login page, and (dashboard)/ for everything behind it
 src/app/og/            the sharing image, drawn on the fly
 src/components/        site sections, and admin/ for the dashboard
 src/lib/content.ts     public reads (features, posts, FAQs, …)
+src/lib/app-screens.ts the 48 screenshots that ship with the site
 src/lib/settings.ts    the web_settings key/value store and its types
 src/lib/supabase/      browser, server and proxy clients
 src/proxy.ts           keeps the login session fresh (Next 16's middleware)
+public/app-screens/    those screenshots, as 1080x2400 PNGs
+scripts/               one-off tools for the screenshots (see below)
 ```
+
+## The screenshots that come with the site
+
+`public/app-screens/` holds 48 real screens captured from the phone over USB,
+and `src/lib/app-screens.ts` gives each one its title, caption and category.
+The gallery uses them **only while `web_screenshots` is empty** — add a single
+screenshot in Admin → Screenshots and yours replace the whole set.
+
+Admin → Screenshots also has a picker for these: every screen is a thumbnail
+that can be ticked or un-ticked, and Save writes the switched-off ids to the
+`screens` row of `web_settings` (`{ hidden: [...] }`). `getScreenshots()` filters
+them out on the next page load, so showing and hiding needs no deploy. A screen
+marked `hidden: true` in `app-screens.ts` ships switched off but is still listed
+in the picker — that is how the empty exam timetable capture is handled.
+
+The student's name, USN, college and email in those captures were replaced with
+a demo profile so the site never publishes someone's personal details. The
+untouched originals stay on this machine in `.screenshots-raw/`, which git
+ignores, so the two scripts can be re-run:
+
+```bash
+node scripts/sanitize-screens.mjs      # paste the demo profile over the real one
+node scripts/portrait-landscape.mjs    # letterbox the landscape GATE calculator
+```
+
+`sanitize-screens.mjs` covers the home screen at two scroll offsets (dark and
+light), My Profile, Edit Profile, the side menu and Sync my data.
 
 Two rules worth keeping:
 

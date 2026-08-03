@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { AdminCard } from '@/components/admin/fields'
 import { ADMIN_NAV } from '@/lib/admin/nav'
+import { bundledScreenshots } from '@/lib/app-screens'
 import { getSettings } from '@/lib/settings'
 import { createClient } from '@/lib/supabase/server'
 import { siteUrl } from '@/lib/utils'
@@ -80,6 +81,13 @@ export default async function AdminOverviewPage() {
     return row && row.is_active && row.url.trim() ? row.url.trim() : ''
   }
 
+  // While the table is empty the site shows the bundled screens, minus the ones
+  // switched off in Admin -> Screenshots. That count is what a visitor sees.
+  const bundledShowing = bundledScreenshots.filter(
+    (shot) => !settings.screens.hidden.includes(shot.id),
+  ).length
+  const liveScreenshots = screenshots > 0 ? screenshots : bundledShowing
+
   const checks: Check[] = [
     {
       done: Boolean(settings.contact.support_email),
@@ -130,9 +138,14 @@ export default async function AdminOverviewPage() {
       required: true,
     },
     {
-      done: screenshots > 0,
-      label: 'Upload some screenshots',
-      detail: 'The home page and the screenshots page both look empty without them.',
+      // The bundled screens already fill the gallery, so this is only about
+      // choosing which of them to show, or swapping in your own.
+      done: true,
+      label: 'Look through the screenshots',
+      detail:
+        screenshots > 0
+          ? 'Your own screenshots are live. The ones that came with the site are no longer shown.'
+          : `${bundledShowing} of the ${bundledScreenshots.length} that came with the site are live. Tick or un-tick any of them, or add your own to replace the set.`,
       href: '/admin/screenshots',
     },
     {
@@ -258,7 +271,12 @@ export default async function AdminOverviewPage() {
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {[
             { label: 'Features', value: features },
-            { label: 'Screenshots', value: screenshots },
+            // Falls back to the set bundled with the site, which is what a
+            // visitor actually sees while the table is empty.
+            {
+              label: 'Screenshots',
+              value: liveScreenshots,
+            },
             { label: 'Numbers', value: stats },
             { label: 'FAQs', value: faqs },
             { label: 'Posts live', value: published },

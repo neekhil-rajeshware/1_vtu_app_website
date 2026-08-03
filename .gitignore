@@ -35,6 +35,10 @@ yarn-error.log*
 # ...but the example has no real values in it and belongs in the repo.
 !.env.example
 
+# the untouched phone captures, before the demo profile was pasted over the
+# real student's name — kept locally so scripts/sanitize-screens.mjs can re-run
+/.screenshots-raw
+
 # vercel
 .vercel
 
