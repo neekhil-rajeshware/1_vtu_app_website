@@ -1,8 +1,8 @@
 import type { MetadataRoute } from 'next'
-import { siteUrl } from '@/lib/utils'
+import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 
-export default function robots(): MetadataRoute.Robots {
-  const base = siteUrl()
+export default async function robots(): Promise<MetadataRoute.Robots> {
+  const base = publicWebsiteUrl(await getSettings())
 
   return {
     rules: [

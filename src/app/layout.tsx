@@ -3,8 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
-import { getSettings } from '@/lib/settings'
-import { siteUrl } from '@/lib/utils'
+import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-sans-stack', subsets: ['latin'] })
@@ -12,8 +11,9 @@ const geistMono = Geist_Mono({ variable: '--font-mono-stack', subsets: ['latin']
 
 /** Title, description, social image and verification all come from Admin -> SEO. */
 export async function generateMetadata(): Promise<Metadata> {
-  const { site, seo } = await getSettings()
-  const base = siteUrl()
+  const settings = await getSettings()
+  const { site, seo } = settings
+  const base = publicWebsiteUrl(settings)
 
   // Falls back to the drawn card at /og so a shared link is never a bare
   // rectangle, even before a sharing image is uploaded.

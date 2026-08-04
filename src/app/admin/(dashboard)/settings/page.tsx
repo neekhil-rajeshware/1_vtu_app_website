@@ -30,7 +30,7 @@ export default async function AdminSettingsPage() {
               type: 'text',
               half: true,
               placeholder: 'onevtu.in',
-              help: 'Just the domain, no https://.',
+              help: 'Just the domain, no https://. Used in your legal pages, your sitemap, and every shared link.',
             },
             {
               name: 'tagline',

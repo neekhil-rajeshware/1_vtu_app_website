@@ -10,7 +10,7 @@ import {
 import { AdminCard } from '@/components/admin/fields'
 import { ADMIN_NAV } from '@/lib/admin/nav'
 import { bundledScreenshots } from '@/lib/app-screens'
-import { getSettings } from '@/lib/settings'
+import { getSettings, unresolvedPlaceholders } from '@/lib/settings'
 import { createClient } from '@/lib/supabase/server'
 import { siteUrl } from '@/lib/utils'
 
@@ -66,11 +66,10 @@ export default async function AdminOverviewPage() {
   ])
 
   // Blanks left in the legal text that the owner has to fill in by hand.
-  const autoFilled = ['[APP_NAME]', '[SUPPORT_EMAIL]', '[WEBSITE]', '[DEVELOPER_NAME]']
   const blanks = new Set<string>()
   for (const page of (legal.data ?? []) as { slug: string; content: string }[]) {
-    for (const token of page.content.match(/\[[A-Z][A-Z_ ]{2,}\]/g) ?? []) {
-      if (!autoFilled.includes(token)) blanks.add(token)
+    for (const token of unresolvedPlaceholders(page.content, settings)) {
+      blanks.add(token)
     }
   }
 
@@ -89,6 +88,18 @@ export default async function AdminOverviewPage() {
   const liveScreenshots = screenshots > 0 ? screenshots : bundledShowing
 
   const checks: Check[] = [
+    {
+      done: Boolean(
+        settings.developer.legal_name &&
+          settings.developer.city &&
+          settings.developer.country,
+      ),
+      label: 'Fill in your developer details',
+      detail:
+        'Your name, city and country. They are filled into all four legal pages automatically, and Play checks them against your developer account.',
+      href: '/admin/developer',
+      required: true,
+    },
     {
       done: Boolean(settings.contact.support_email),
       label: 'Add your support email',

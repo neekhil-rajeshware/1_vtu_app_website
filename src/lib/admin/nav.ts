@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   BadgeCheck,
   Bell,
+  Building2,
   FileText,
   Flag,
   Gauge,
@@ -139,6 +140,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
   {
     title: 'App and legal',
     items: [
+      {
+        href: '/admin/developer',
+        label: 'Developer details',
+        icon: Building2,
+        hint: 'Your name, address and contact — filled into every legal page.',
+      },
       {
         href: '/admin/legal',
         label: 'Legal pages',

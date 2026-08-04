@@ -93,6 +93,7 @@ database checks before it lets anything be written. Forgot the password? Use
 | Features, Screenshots, Numbers, Reviews, FAQ, Version history | The lists the public pages are built from |
 | Blog posts | Write, save as a draft, publish |
 | Messages, Content reports | Everything the public sends you, with a note of what you decided |
+| Developer details | Your name, address, contact and governing law — filled into all four legal pages |
 | Legal pages | Privacy policy, terms, community guidelines, delete account |
 | In-app links | Buttons **inside the phone app** — changing one here needs no app update |
 | app-ads.txt | The line AdMob asks you to publish |
@@ -114,6 +115,32 @@ src/proxy.ts           keeps the login session fresh (Next 16's middleware)
 public/app-screens/    those screenshots, as 1080x2400 PNGs
 scripts/               one-off tools for the screenshots (see below)
 ```
+
+## The legal pages fill themselves in
+
+None of the four legal pages hard-code who publishes the app. They carry
+placeholders, and `fillPlaceholders()` in `src/lib/settings.ts` swaps in the real
+values on every request:
+
+| Placeholder | Comes from |
+| --- | --- |
+| `[APP_NAME]` | Site settings → app name |
+| `[SUPPORT_EMAIL]` | Site settings → support email |
+| `[WEBSITE]` | Site settings → domain, or `NEXT_PUBLIC_SITE_URL` |
+| `[DEVELOPER_NAME]` | Developer details → developer or company name |
+| `[DEVELOPER_EMAIL]` | Developer details → legal contact email (falls back to the support email) |
+| `[DEVELOPER_PHONE]` | Developer details → phone |
+| `[DEVELOPER_ADDRESS]` | Developer details → the address fields, joined into one line |
+| `[GOVERNING_LAW]` | Developer details → country whose law governs |
+| `[JURISDICTION]` | Developer details → courts that settle a dispute |
+
+So changing an address in Admin → Developer details changes the privacy policy
+and the terms on the next page load, with no editing and no deploy.
+
+Optional details are wrapped in `[[ … ]]` in the page HTML. The whole block —
+label, value and line break — disappears if the placeholders inside it are
+empty, which is how an unset phone number leaves no trace on the page. Anything
+still unresolved is counted as a blank and reported on the dashboard.
 
 ## The screenshots that come with the site
 

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ChevronRight, TriangleAlert } from 'lucide-react'
 import { AdminCard } from '@/components/admin/fields'
+import { getSettings, unresolvedPlaceholders } from '@/lib/settings'
 import { createClient } from '@/lib/supabase/server'
 import { siteUrl } from '@/lib/utils'
 import type { LegalPage } from '@/lib/content'
@@ -22,7 +23,10 @@ const ORDER = ['privacy-policy', 'terms', 'community-guidelines', 'delete-accoun
 
 export default async function AdminLegalPage() {
   const supabase = await createClient()
-  const { data } = await supabase.from('web_legal_pages').select('*')
+  const [{ data }, settings] = await Promise.all([
+    supabase.from('web_legal_pages').select('*'),
+    getSettings(),
+  ])
 
   const pages = ((data ?? []) as LegalPage[]).sort(
     (a, b) => ORDER.indexOf(a.slug) - ORDER.indexOf(b.slug),
@@ -40,18 +44,23 @@ export default async function AdminLegalPage() {
           Policy in a way that changes what you collect, change the date at the
           top too.
         </p>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          Your name, address, contact details and governing law are not written
+          into these pages — they come from{' '}
+          <Link
+            href="/admin/developer"
+            className="font-semibold text-primary hover:underline"
+          >
+            Developer details
+          </Link>{' '}
+          and are filled in every time a page is opened. Change them there once
+          and all four pages follow.
+        </p>
       </AdminCard>
 
       <ul className="space-y-3">
         {pages.map((page) => {
-          const blanks = Array.from(
-            new Set(page.content.match(/\[[A-Z][A-Z_ ]{2,}\]/g) ?? []),
-          ).filter(
-            (token) =>
-              !['[APP_NAME]', '[SUPPORT_EMAIL]', '[WEBSITE]', '[DEVELOPER_NAME]'].includes(
-                token,
-              ),
-          )
+          const blanks = unresolvedPlaceholders(page.content, settings)
 
           return (
             <li key={page.slug}>

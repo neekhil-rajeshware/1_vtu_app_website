@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 import { getPublishedPosts } from '@/lib/content'
-import { siteUrl } from '@/lib/utils'
+import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 
 const STATIC_ROUTES: Array<{
   path: string
@@ -22,7 +22,7 @@ const STATIC_ROUTES: Array<{
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = siteUrl()
+  const base = publicWebsiteUrl(await getSettings())
   const now = new Date()
 
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
