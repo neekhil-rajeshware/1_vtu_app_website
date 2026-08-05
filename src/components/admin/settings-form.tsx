@@ -39,6 +39,11 @@ type Values = Record<string, unknown>
 /**
  * Edits one row of `web_settings`. Every public page reads these rows per
  * request, so a save shows up on the site immediately — no rebuild, no deploy.
+ *
+ * A save merges over whatever is stored at that moment instead of replacing the
+ * row outright. Two pages edit parts of the same `site` row (Basics here, App
+ * name on its own page), and without the merge a tab that had been open since
+ * before the other was saved would quietly put the old value back.
  */
 export function SettingsForm({
   settingsKey,
@@ -54,6 +59,9 @@ export function SettingsForm({
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
 
+  /** Only the fields this form actually shows may be written. */
+  const owned = groups.flatMap((group) => group.fields.map((field) => field.name))
+
   const set = (name: string, value: unknown) => {
     setValues((prev) => ({ ...prev, [name]: value }))
     setDirty(true)
@@ -67,10 +75,25 @@ export function SettingsForm({
   async function save() {
     setSaving(true)
     const supabase = createClient()
+
+    const { data: current } = await supabase
+      .from('web_settings')
+      .select('value')
+      .eq('key', settingsKey)
+      .maybeSingle()
+
+    const stored =
+      current?.value && typeof current.value === 'object'
+        ? (current.value as Values)
+        : {}
+
+    const merged: Values = { ...stored }
+    for (const name of owned) merged[name] = values[name]
+
     const { error } = await supabase
       .from('web_settings')
       .upsert(
-        { key: settingsKey, value: values, updated_at: new Date().toISOString() },
+        { key: settingsKey, value: merged, updated_at: new Date().toISOString() },
         { onConflict: 'key' },
       )
     setSaving(false)
@@ -80,6 +103,7 @@ export function SettingsForm({
       return
     }
 
+    setValues(merged)
     setDirty(false)
     toast.success('Saved. The website is updated.')
     router.refresh()

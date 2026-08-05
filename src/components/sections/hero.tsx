@@ -2,6 +2,7 @@ import { ArrowRight, Download, ShieldCheck, Sparkles, WifiOff } from 'lucide-rea
 import { Badge, ButtonLink, Container } from '@/components/ui'
 import { PhoneMockup } from '@/components/phone-mockup'
 import type { AllSettings } from '@/lib/settings'
+import { appName } from '@/lib/settings'
 
 const TRUST_POINTS = [
   { icon: Download, label: 'Free to download' },
@@ -81,7 +82,7 @@ export function Hero({ settings }: { settings: AllSettings }) {
         </div>
 
         <div className="animate-rise justify-self-center lg:justify-self-end">
-          <PhoneMockup imageUrl={hero.image_url} appName={settings.site.name} />
+          <PhoneMockup imageUrl={hero.image_url} appName={appName(settings)} />
         </div>
       </Container>
     </section>

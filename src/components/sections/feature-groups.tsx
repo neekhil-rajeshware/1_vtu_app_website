@@ -9,11 +9,13 @@ import { groupFeatures, type Feature, type HomeSection } from '@/lib/content'
 export function FeatureGroups({
   section,
   features,
+  appName,
   showHeading = true,
   detailed = false,
 }: {
   section?: HomeSection
   features: Feature[]
+  appName: string
   showHeading?: boolean
   detailed?: boolean
 }) {
@@ -25,7 +27,7 @@ export function FeatureGroups({
         {showHeading ? (
           <SectionHeading
             eyebrow="Everything included"
-            title={section?.heading || 'Everything inside OneVTU'}
+            title={section?.heading || `Everything inside ${appName}`}
             subtitle={section?.subheading ?? undefined}
           />
         ) : null}

@@ -4,6 +4,7 @@ import { BrandLogo } from '@/components/brand-logo'
 import { SocialIcon, SOCIAL_LABELS, type SocialNetwork } from '@/components/social-icon'
 import { Container } from '@/components/ui'
 import type { AllSettings } from '@/lib/settings'
+import { appName } from '@/lib/settings'
 
 const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string }> }> = [
   {
@@ -45,6 +46,7 @@ const SOCIAL_ORDER: SocialNetwork[] = [
 
 export function SiteFooter({ settings }: { settings: AllSettings }) {
   const { site, footer, social, contact } = settings
+  const name = appName(settings)
   const year = new Date().getFullYear()
   const activeSocials = SOCIAL_ORDER.filter((key) => social[key])
 
@@ -54,9 +56,9 @@ export function SiteFooter({ settings }: { settings: AllSettings }) {
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div>
             <div className="flex items-center gap-2.5">
-              <BrandLogo name={site.name} logoUrl={site.logo_url} />
+              <BrandLogo name={name} logoUrl={site.logo_url} />
               <span className="text-[1.0625rem] font-bold tracking-tight">
-                {site.name}
+                {name}
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -118,7 +120,7 @@ export function SiteFooter({ settings }: { settings: AllSettings }) {
 
         <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {year} {footer.copyright || site.name}. All rights reserved.
+            © {year} {footer.copyright || name}. All rights reserved.
           </p>
           <Link href="/admin" className="transition-colors hover:text-foreground">
             Admin

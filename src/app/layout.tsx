@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/components/theme-provider'
-import { getSettings, publicWebsiteUrl } from '@/lib/settings'
+import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-sans-stack', subsets: ['latin'] })
@@ -14,6 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSettings()
   const { site, seo } = settings
   const base = publicWebsiteUrl(settings)
+  const name = appName(settings)
 
   // Falls back to the drawn card at /og so a shared link is never a bare
   // rectangle, even before a sharing image is uploaded.
@@ -22,23 +23,23 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(base),
     title: {
-      default: seo.default_title || `${site.name} — ${site.tagline}`,
-      template: `%s — ${site.name}`,
+      default: seo.default_title || `${name} — ${site.tagline}`,
+      template: `%s — ${name}`,
     },
     description: seo.default_description || site.short_description,
-    applicationName: site.name,
+    applicationName: name,
     icons: site.favicon_url ? { icon: site.favicon_url } : undefined,
     openGraph: {
       type: 'website',
-      siteName: site.name,
+      siteName: name,
       url: base,
-      title: seo.default_title || `${site.name} — ${site.tagline}`,
+      title: seo.default_title || `${name} — ${site.tagline}`,
       description: seo.default_description || site.short_description,
       images: [{ url: shareImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
-      title: seo.default_title || site.name,
+      title: seo.default_title || name,
       description: seo.default_description || site.short_description,
       images: [shareImage],
     },

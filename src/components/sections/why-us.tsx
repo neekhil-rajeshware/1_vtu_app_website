@@ -21,12 +21,18 @@ const WITH = [
 ]
 
 /** Side-by-side before / after comparison. */
-export function WhyUs({ section }: { section?: HomeSection }) {
+export function WhyUs({
+  section,
+  appName,
+}: {
+  section?: HomeSection
+  appName: string
+}) {
   return (
     <Section className="bg-muted/40">
       <Container>
         <SectionHeading
-          eyebrow="Why OneVTU"
+          eyebrow={`Why ${appName}`}
           title={section?.heading || 'The difference it makes'}
           subtitle={section?.subheading ?? undefined}
         />
@@ -54,7 +60,7 @@ export function WhyUs({ section }: { section?: HomeSection }) {
               <span className="grid h-7 w-7 place-items-center rounded-full bg-primary-soft text-primary dark:text-accent-foreground">
                 <Check className="h-4 w-4" />
               </span>
-              With OneVTU
+              With {appName}
             </h3>
             <ul className="mt-4 space-y-3">
               {WITH.map((item) => (

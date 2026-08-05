@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og'
-import { getSettings } from '@/lib/settings'
+import { appName, getSettings } from '@/lib/settings'
 
 /**
  * The picture that shows when a link to this site is pasted into WhatsApp,
@@ -14,9 +14,10 @@ export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
 export async function GET() {
-  const { site, seo } = await getSettings()
+  const settings = await getSettings()
+  const { site, seo } = settings
 
-  const heading = site.name || 'OneVTU'
+  const heading = appName(settings)
   const tagline = seo.default_description || site.tagline || ''
   const domain = (site.domain || '').replace(/^https?:\/\//, '').replace(/\/$/, '')
 

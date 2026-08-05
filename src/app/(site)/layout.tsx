@@ -1,7 +1,7 @@
 import { AnnouncementBar } from '@/components/announcement-bar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
-import { getSettings } from '@/lib/settings'
+import { appName, getSettings } from '@/lib/settings'
 
 /**
  * Chrome shared by every public page: announcement strip, header, footer.
@@ -18,7 +18,7 @@ export default async function SiteLayout({
     <>
       <AnnouncementBar settings={settings.announcement} />
       <SiteHeader
-        siteName={settings.site.name}
+        siteName={appName(settings)}
         tagline={settings.site.tagline}
         logoUrl={settings.site.logo_url}
         playStoreUrl={settings.download.play_store_url}

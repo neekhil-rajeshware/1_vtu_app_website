@@ -3,6 +3,7 @@ import { HardDriveUpload, KeyRound, Smartphone } from 'lucide-react'
 import { Container, Section, SectionHeading } from '@/components/ui'
 import type { HomeSection } from '@/lib/content'
 import type { AllSettings } from '@/lib/settings'
+import { appName } from '@/lib/settings'
 
 /**
  * The Android package the site belongs to. Written out because Google's OAuth
@@ -27,19 +28,19 @@ export function AccountAndData({
   section?: HomeSection
   settings: AllSettings
 }) {
-  const appName = settings.site.name || 'OneVTU'
+  const name = appName(settings)
   const email = settings.contact.support_email
 
   const cards = [
     {
       icon: Smartphone,
       title: 'What the app is for',
-      body: `${appName} is a free Android app for engineering students of Visvesvaraya Technological University. It brings the syllabus, previous year question papers, formulas, unit converters, attendance, CGPA and a set of AI study tools into one place, filtered to your branch, scheme and semester. It is free to use and paid for by ads.`,
+      body: `${name} is a free Android app for engineering students of Visvesvaraya Technological University. It brings the syllabus, previous year question papers, formulas, unit converters, attendance, CGPA and a set of AI study tools into one place, filtered to your branch, scheme and semester. It is free to use and paid for by ads.`,
     },
     {
       icon: KeyRound,
       title: 'Why you need an account',
-      body: `${appName} asks you to sign in before you use it. Your attendance, marks, rewards and study progress are yours, and an account is what lets them follow you to a new phone instead of disappearing with the old one. You can register with an email address and password, or sign in with Google — in which case ${appName} receives your name, email address and profile picture from your Google account, and uses them to recognise you when you come back. Nothing is ever posted anywhere on your behalf.`,
+      body: `${name} asks you to sign in before you use it. Your attendance, marks, rewards and study progress are yours, and an account is what lets them follow you to a new phone instead of disappearing with the old one. You can register with an email address and password, or sign in with Google — in which case ${name} receives your name, email address and profile picture from your Google account, and uses them to recognise you when you come back. Nothing is ever posted anywhere on your behalf.`,
     },
     {
       icon: HardDriveUpload,
@@ -78,7 +79,7 @@ export function AccountAndData({
         </div>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          {appName} is an Android app, published as{' '}
+          {name} is an Android app, published as{' '}
           <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
             {PACKAGE_NAME}
           </code>

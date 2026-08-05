@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { Download, QrCode, ShieldCheck, Smartphone, Sparkles } from 'lucide-react'
 import { ButtonLink, Card, Container, EmptyState, PageHeader, Section, SectionHeading } from '@/components/ui'
 import { getVersions } from '@/lib/content'
-import { getSettings } from '@/lib/settings'
+import { appName, getSettings } from '@/lib/settings'
 import { formatDate } from '@/lib/utils'
 
 export const metadata: Metadata = {
@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 
 export default async function DownloadPage() {
   const [settings, versions] = await Promise.all([getSettings(), getVersions()])
-  const { download, site } = settings
+  const { download } = settings
+  const name = appName(settings)
 
   const facts = [
     { icon: Smartphone, label: 'Requires', value: download.min_android },
@@ -27,7 +28,7 @@ export default async function DownloadPage() {
     <>
       <PageHeader
         eyebrow="Download"
-        title={`Get ${site.name} on Android`}
+        title={`Get ${name} on Android`}
         subtitle="Free, no subscription. A free account keeps your attendance, marks and progress yours across phones."
       />
 
@@ -80,7 +81,7 @@ export default async function DownloadPage() {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={download.qr_image_url}
-                  alt={`QR code to download ${site.name}`}
+                  alt={`QR code to download ${name}`}
                   className="h-44 w-44 rounded-xl bg-white p-2"
                 />
                 <p className="mt-4 text-sm font-semibold">Scan to install</p>

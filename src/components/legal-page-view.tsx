@@ -2,16 +2,20 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { Container, PageHeader } from '@/components/ui'
 import { getLegalPage } from '@/lib/content'
-import { fillPlaceholders, getSettings } from '@/lib/settings'
+import { appName, fillPlaceholders, getSettings } from '@/lib/settings'
 import { formatDate } from '@/lib/utils'
 
-/** Shared metadata builder for the four legal routes. */
+/**
+ * Shared metadata builder for the four legal routes. The stored title may itself
+ * contain `[APP_NAME]`, so it goes through the placeholder engine like the body.
+ */
 export async function legalMetadata(slug: string): Promise<Metadata> {
-  const page = await getLegalPage(slug)
+  const [page, settings] = await Promise.all([getLegalPage(slug), getSettings()])
   if (!page) return { title: 'Not found' }
+  const title = fillPlaceholders(page.title, settings)
   return {
-    title: page.title,
-    description: `${page.title} for the OneVTU app.`,
+    title,
+    description: `${title} for the ${appName(settings)} app.`,
     alternates: { canonical: `/${slug}` },
   }
 }
@@ -33,7 +37,7 @@ export async function LegalPageView({ slug }: { slug: string }) {
     <>
       <PageHeader
         eyebrow="Legal"
-        title={page.title}
+        title={fillPlaceholders(page.title, settings)}
         subtitle={updated ? `Last updated ${updated}.` : undefined}
       />
       <Container className="py-12">

@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { AdminCard } from '@/components/admin/fields'
 import { SettingsForm } from '@/components/admin/settings-form'
-import { getSettings, placeholderValues } from '@/lib/settings'
+import { getRawSettings, getSettings, placeholderValues } from '@/lib/settings'
 
 export const metadata = { title: 'Developer details' }
 
@@ -19,8 +19,11 @@ const USED_FOR: { token: string; where: string }[] = [
 ]
 
 export default async function AdminDeveloperPage() {
-  const settings = await getSettings()
-  const values = placeholderValues(settings)
+  // The form is fed the stored text, so saving it cannot bake a resolved
+  // placeholder in; the preview below uses the resolved copy, because that is
+  // what a visitor actually reads.
+  const [settings, resolved] = await Promise.all([getRawSettings(), getSettings()])
+  const values = placeholderValues(resolved)
 
   return (
     <div className="space-y-4">

@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { defaultHiddenScreens } from '@/lib/app-screens'
 import { createClient } from '@/lib/supabase/server'
 import { siteUrl } from '@/lib/utils'
@@ -9,7 +10,15 @@ import { siteUrl } from '@/lib/utils'
  *
  * Pages read settings through `getSettings()`. Because the site is rendered per
  * request, a change saved in the dashboard shows up on the next page load.
+ *
+ * `getSettings()` also resolves placeholders such as `[APP_NAME]`, so the app
+ * name is typed in one field and every page follows it. Admin forms must use
+ * `getRawSettings()` instead, or saving a form would write the resolved text
+ * back and freeze the name into the content.
  */
+
+/** Used when the app name has never been filled in. */
+export const DEFAULT_APP_NAME = 'One VTU'
 
 export type SiteSettings = {
   name: string
@@ -137,7 +146,7 @@ export type AllSettings = {
  */
 export const FALLBACK_SETTINGS: AllSettings = {
   site: {
-    name: 'OneVTU',
+    name: DEFAULT_APP_NAME,
     tagline: 'Your complete VTU study companion',
     short_description: '',
     domain: '',
@@ -160,13 +169,13 @@ export const FALLBACK_SETTINGS: AllSettings = {
   social: { youtube: '', instagram: '', twitter: '', linkedin: '', telegram: '', whatsapp: '' },
   download: { play_store_url: '', qr_image_url: '', min_android: '', size: '', price: '' },
   seo: {
-    default_title: 'OneVTU',
+    default_title: DEFAULT_APP_NAME,
     default_description: '',
     og_image_url: '',
     ga_measurement_id: '',
     google_site_verification: '',
   },
-  footer: { description: '', disclaimer: '', copyright: 'OneVTU' },
+  footer: { description: '', disclaimer: '', copyright: DEFAULT_APP_NAME },
   about: { heading: '', story: '', mission: '' },
   adstxt: { content: '' },
   developer: {
@@ -185,7 +194,12 @@ export const FALLBACK_SETTINGS: AllSettings = {
   screens: { hidden: defaultHiddenScreens },
 }
 
-export async function getSettings(): Promise<AllSettings> {
+/**
+ * One query per request, however many callers ask for settings. Wrapped in
+ * React's `cache` so the token resolution below is not paid for repeatedly
+ * either.
+ */
+const fetchSettings = cache(async (): Promise<AllSettings> => {
   try {
     const supabase = await createClient()
     const { data, error } = await supabase.from('web_settings').select('key, value')
@@ -203,6 +217,53 @@ export async function getSettings(): Promise<AllSettings> {
   } catch {
     return FALLBACK_SETTINGS
   }
+})
+
+/**
+ * Settings exactly as they are stored, placeholders and all. This is what the
+ * admin forms must edit: a form saves back every field it was given, so handing
+ * it resolved text would replace `[APP_NAME]` with today's name for good.
+ */
+export async function getRawSettings(): Promise<AllSettings> {
+  return fetchSettings()
+}
+
+/** Settings with every placeholder resolved. What the public site reads. */
+export async function getSettings(): Promise<AllSettings> {
+  const raw = await fetchSettings()
+  return resolveSettingTokens(raw)
+}
+
+/**
+ * Runs every settings string through the placeholder engine, so text saved in
+ * the dashboard may contain `[APP_NAME]`, `[SUPPORT_EMAIL]` or `[WEBSITE]` and
+ * still read correctly. `site.name` is skipped: it is what the tokens resolve
+ * to, and letting it contain one would be circular.
+ */
+function resolveSettingTokens(raw: AllSettings): AllSettings {
+  const out: Record<string, unknown> = {}
+
+  for (const [key, group] of Object.entries(raw)) {
+    if (!group || typeof group !== 'object') {
+      out[key] = group
+      continue
+    }
+
+    const resolved: Record<string, unknown> = { ...(group as object) }
+    for (const [field, value] of Object.entries(resolved)) {
+      if (typeof value !== 'string') continue
+      if (key === 'site' && field === 'name') continue
+      resolved[field] = fillPlaceholders(value, raw)
+    }
+    out[key] = resolved
+  }
+
+  return out as AllSettings
+}
+
+/** The app name as it should be written anywhere on the site. */
+export function appName(settings: AllSettings): string {
+  return settings.site.name.trim() || DEFAULT_APP_NAME
 }
 
 /** Reads a single settings key. */
@@ -241,10 +302,11 @@ export function placeholderValues(settings: AllSettings): Record<string, string>
   const email = contact.support_email || developer.email
 
   return {
-    '[APP_NAME]': site.name || 'OneVTU',
+    '[APP_NAME]': site.name.trim() || DEFAULT_APP_NAME,
     '[SUPPORT_EMAIL]': email,
     '[WEBSITE]': publicWebsiteUrl(settings),
-    '[DEVELOPER_NAME]': developer.legal_name || footer.copyright || site.name || 'OneVTU',
+    '[DEVELOPER_NAME]':
+      developer.legal_name || footer.copyright || site.name || DEFAULT_APP_NAME,
     '[DEVELOPER_EMAIL]': developer.email || email,
     '[DEVELOPER_PHONE]': developer.phone.trim(),
     '[DEVELOPER_ADDRESS]': [

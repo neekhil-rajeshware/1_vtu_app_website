@@ -18,6 +18,7 @@ import {
   Settings,
   Sparkles,
   Star,
+  Tag,
   UserCog,
 } from 'lucide-react'
 
@@ -54,10 +55,16 @@ export const ADMIN_NAV: AdminNavGroup[] = [
     title: 'The website',
     items: [
       {
+        href: '/admin/app-name',
+        label: 'App name',
+        icon: Tag,
+        hint: 'Type it once — the whole website follows it.',
+      },
+      {
         href: '/admin/settings',
         label: 'Site settings',
         icon: Settings,
-        hint: 'App name, logo, contact email, social links, SEO.',
+        hint: 'Logo, website address, contact email, social links, SEO.',
       },
       {
         href: '/admin/home',

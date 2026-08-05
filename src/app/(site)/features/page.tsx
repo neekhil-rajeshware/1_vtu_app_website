@@ -5,7 +5,7 @@ import { ClosingCta } from '@/components/sections/closing-cta'
 import { DynamicIcon } from '@/components/dynamic-icon'
 import { Container, PageHeader, Section } from '@/components/ui'
 import { getFaqs, getFeatures, getHighlightFeatures } from '@/lib/content'
-import { getSettings } from '@/lib/settings'
+import { appName, getSettings } from '@/lib/settings'
 
 export const metadata: Metadata = {
   title: 'Features',
@@ -54,7 +54,12 @@ export default async function FeaturesPage() {
         </Section>
       ) : null}
 
-      <FeatureGroups features={features} showHeading={false} detailed />
+      <FeatureGroups
+        features={features}
+        appName={appName(settings)}
+        showHeading={false}
+        detailed
+      />
 
       {featureFaqs.length > 0 ? (
         <div className="border-t border-border bg-muted/40">

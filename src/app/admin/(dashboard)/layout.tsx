@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { AdminShell } from '@/components/admin/admin-shell'
 import { requireAdmin } from '@/lib/admin/auth'
-import { getSettings } from '@/lib/settings'
+import { appName, getSettings } from '@/lib/settings'
 
 export const metadata: Metadata = {
   title: { default: 'Admin', template: '%s · Admin' },
@@ -17,7 +17,7 @@ export default async function AdminDashboardLayout({
 
   return (
     <AdminShell
-      siteName={settings.site.name || 'OneVTU'}
+      siteName={appName(settings)}
       logoUrl={settings.site.logo_url}
       email={admin.email}
     >

@@ -1,12 +1,12 @@
 import { AdminCard } from '@/components/admin/fields'
 import { SettingsForm } from '@/components/admin/settings-form'
-import { getSettings } from '@/lib/settings'
+import { getRawSettings } from '@/lib/settings'
 import { siteUrl } from '@/lib/utils'
 
 export const metadata = { title: 'app-ads.txt' }
 
 export default async function AdminAdsTxtPage() {
-  const settings = await getSettings()
+  const settings = await getRawSettings()
   const url = `${siteUrl()}/app-ads.txt`
 
   return (

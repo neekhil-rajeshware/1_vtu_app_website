@@ -1,10 +1,12 @@
 import { SettingsTabs, type SettingsTab } from '@/components/admin/settings-tabs'
-import { getSettings } from '@/lib/settings'
+import { getRawSettings } from '@/lib/settings'
 
 export const metadata = { title: 'Site settings' }
 
 export default async function AdminSettingsPage() {
-  const settings = await getSettings()
+  // Raw, not resolved: these forms save back what they were given, so handing
+  // them resolved text would write today's app name into the content for good.
+  const settings = await getRawSettings()
 
   const tabs: SettingsTab[] = [
     {
@@ -15,15 +17,8 @@ export default async function AdminSettingsPage() {
         {
           title: 'Name and identity',
           description:
-            'Used in the header, the browser tab, and anywhere the app name appears.',
+            'The app name itself is on its own page — App name in the menu — because it is used in every corner of the site. Type [APP_NAME] in any field here and it is replaced with it.',
           fields: [
-            {
-              name: 'name',
-              label: 'App name',
-              type: 'text',
-              half: true,
-              placeholder: 'OneVTU',
-            },
             {
               name: 'domain',
               label: 'Website address',

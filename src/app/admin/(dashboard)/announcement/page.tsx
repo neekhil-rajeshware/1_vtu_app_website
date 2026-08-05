@@ -1,11 +1,11 @@
 import { AdminCard } from '@/components/admin/fields'
 import { SettingsForm } from '@/components/admin/settings-form'
-import { getSettings } from '@/lib/settings'
+import { getRawSettings } from '@/lib/settings'
 
 export const metadata = { title: 'Announcement bar' }
 
 export default async function AdminAnnouncementPage() {
-  const settings = await getSettings()
+  const settings = await getRawSettings()
 
   return (
     <div className="space-y-4">

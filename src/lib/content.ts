@@ -1,5 +1,5 @@
 import { bundledScreenshots } from '@/lib/app-screens'
-import { getSetting } from '@/lib/settings'
+import { fillPlaceholders, getRawSettings, getSetting } from '@/lib/settings'
 import { createClient } from '@/lib/supabase/server'
 
 /** Row shapes for the `web_*` content tables the public site reads. */
@@ -105,7 +105,36 @@ export type LegalPage = {
  * what comes back: only active rows and published posts are readable by the
  * public. Every helper returns [] (or null) on failure instead of throwing, so
  * one empty table can never take the whole page down.
+ *
+ * Text fields pass through `withTokens`, so anything typed in the dashboard may
+ * use `[APP_NAME]`, `[SUPPORT_EMAIL]` or `[WEBSITE]` and follows Admin → App
+ * name instead of spelling the app out in every row.
  */
+
+async function withTokens<T extends object>(
+  rows: T[],
+  fields: Array<keyof T>,
+): Promise<T[]> {
+  const settings = await getRawSettings()
+
+  return rows.map((row) => {
+    const copy = { ...row }
+    for (const field of fields) {
+      const value = copy[field]
+      if (typeof value === 'string') {
+        copy[field] = fillPlaceholders(value, settings) as T[keyof T]
+      }
+    }
+    return copy
+  })
+}
+
+const FEATURE_TEXT: Array<keyof Feature> = [
+  'group_name',
+  'title',
+  'short_description',
+  'long_description',
+]
 
 export async function getFeatures(): Promise<Feature[]> {
   const supabase = await createClient()
@@ -115,7 +144,7 @@ export async function getFeatures(): Promise<Feature[]> {
     .eq('is_active', true)
     .order('sort_order')
     .order('title')
-  return (data as Feature[]) ?? []
+  return withTokens((data as Feature[]) ?? [], FEATURE_TEXT)
 }
 
 export async function getHighlightFeatures(): Promise<Feature[]> {
@@ -126,7 +155,7 @@ export async function getHighlightFeatures(): Promise<Feature[]> {
     .eq('is_active', true)
     .eq('is_highlight', true)
     .order('sort_order')
-  return (data as Feature[]) ?? []
+  return withTokens((data as Feature[]) ?? [], FEATURE_TEXT)
 }
 
 /**
@@ -145,7 +174,7 @@ export async function getScreenshots(): Promise<Screenshot[]> {
     .eq('is_active', true)
     .order('sort_order')
   const rows = (data as Screenshot[]) ?? []
-  if (rows.length > 0) return rows
+  if (rows.length > 0) return withTokens(rows, ['title', 'caption'])
 
   const { hidden } = await getSetting('screens')
   const off = new Set(hidden)
@@ -159,7 +188,7 @@ export async function getFaqs(): Promise<Faq[]> {
     .select('*')
     .eq('is_active', true)
     .order('sort_order')
-  return (data as Faq[]) ?? []
+  return withTokens((data as Faq[]) ?? [], ['question', 'answer'])
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
@@ -169,7 +198,7 @@ export async function getTestimonials(): Promise<Testimonial[]> {
     .select('*')
     .eq('is_active', true)
     .order('sort_order')
-  return (data as Testimonial[]) ?? []
+  return withTokens((data as Testimonial[]) ?? [], ['quote'])
 }
 
 export async function getStats(): Promise<Stat[]> {
@@ -179,7 +208,7 @@ export async function getStats(): Promise<Stat[]> {
     .select('*')
     .eq('is_active', true)
     .order('sort_order')
-  return (data as Stat[]) ?? []
+  return withTokens((data as Stat[]) ?? [], ['label'])
 }
 
 export async function getVersions(): Promise<AppVersion[]> {
@@ -189,7 +218,7 @@ export async function getVersions(): Promise<AppVersion[]> {
     .select('*')
     .eq('is_active', true)
     .order('sort_order')
-  return (data as AppVersion[]) ?? []
+  return withTokens((data as AppVersion[]) ?? [], ['notes'])
 }
 
 export async function getHomeSections(): Promise<Record<string, HomeSection>> {
@@ -199,11 +228,21 @@ export async function getHomeSections(): Promise<Record<string, HomeSection>> {
     .select('*')
     .order('sort_order')
 
+  const rows = await withTokens((data as HomeSection[]) ?? [], [
+    'heading',
+    'subheading',
+  ])
+
   const map: Record<string, HomeSection> = {}
-  for (const row of (data as HomeSection[]) ?? []) map[row.section_key] = row
+  for (const row of rows) map[row.section_key] = row
   return map
 }
 
+/**
+ * Deliberately raw: `LegalPageView` and Admin -> Legal pages resolve the
+ * placeholders themselves, because they also have to report the ones still
+ * left unfilled. Resolving here would hide them.
+ */
 export async function getLegalPage(slug: string): Promise<LegalPage | null> {
   const supabase = await createClient()
   const { data } = await supabase
@@ -214,6 +253,14 @@ export async function getLegalPage(slug: string): Promise<LegalPage | null> {
   return (data as LegalPage) ?? null
 }
 
+const POST_TEXT: Array<keyof Post> = [
+  'title',
+  'excerpt',
+  'content',
+  'meta_title',
+  'meta_description',
+]
+
 export async function getPublishedPosts(limit?: number): Promise<Post[]> {
   const supabase = await createClient()
   let query = supabase
@@ -223,7 +270,7 @@ export async function getPublishedPosts(limit?: number): Promise<Post[]> {
     .order('published_at', { ascending: false, nullsFirst: false })
   if (limit) query = query.limit(limit)
   const { data } = await query
-  return (data as Post[]) ?? []
+  return withTokens((data as Post[]) ?? [], POST_TEXT)
 }
 
 export async function getPostBySlug(slug: string): Promise<Post | null> {
@@ -234,7 +281,9 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
     .eq('slug', slug)
     .eq('status', 'published')
     .maybeSingle()
-  return (data as Post) ?? null
+  if (!data) return null
+  const [post] = await withTokens([data as Post], POST_TEXT)
+  return post
 }
 
 /** Groups features in the order the groups first appear. */

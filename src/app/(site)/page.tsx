@@ -20,7 +20,7 @@ import {
   getStats,
   getTestimonials,
 } from '@/lib/content'
-import { getSettings } from '@/lib/settings'
+import { appName, getSettings } from '@/lib/settings'
 import { siteUrl } from '@/lib/utils'
 
 export default async function HomePage() {
@@ -49,10 +49,12 @@ export default async function HomePage() {
   // Sections can be hidden individually from Admin -> Home Page.
   const visible = (key: string) => sections[key]?.is_visible !== false
 
+  const name = appName(settings)
+
   const appJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MobileApplication',
-    name: settings.site.name,
+    name,
     description: settings.seo.default_description || settings.site.short_description,
     applicationCategory: 'EducationalApplication',
     operatingSystem: 'Android',
@@ -82,9 +84,13 @@ export default async function HomePage() {
         <ScreenshotShowcase section={sections.screenshots} screenshots={screenshots} />
       ) : null}
       {visible('how') ? <HowItWorks section={sections.how} /> : null}
-      {visible('why') ? <WhyUs section={sections.why} /> : null}
+      {visible('why') ? <WhyUs section={sections.why} appName={name} /> : null}
       {visible('features') ? (
-        <FeatureGroups section={sections.features} features={features} />
+        <FeatureGroups
+          section={sections.features}
+          features={features}
+          appName={name}
+        />
       ) : null}
       {visible('testimonials') ? (
         <Testimonials section={sections.testimonials} testimonials={testimonials} />

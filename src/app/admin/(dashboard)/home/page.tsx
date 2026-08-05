@@ -1,12 +1,12 @@
 import { AdminCard } from '@/components/admin/fields'
 import { HomeSectionsEditor } from '@/components/admin/home-sections-editor'
 import { SettingsForm } from '@/components/admin/settings-form'
-import { getSettings } from '@/lib/settings'
+import { getRawSettings } from '@/lib/settings'
 
 export const metadata = { title: 'Home page' }
 
 export default async function AdminHomePage() {
-  const settings = await getSettings()
+  const settings = await getRawSettings()
 
   return (
     <div className="space-y-5">
