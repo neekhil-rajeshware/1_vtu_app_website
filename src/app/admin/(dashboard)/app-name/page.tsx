@@ -109,13 +109,21 @@ const SETTINGS_PAGES: Record<string, { where: string; href: string }> = {
 /**
  * Matches the name however it was typed: "One VTU", "OneVTU" and "one vtu" all
  * count, because a rename would leave all three behind.
+ *
+ * Addresses are not prose, so `support@onevtu.in` and `https://onevtu.in` are
+ * skipped — a domain that happens to contain the name is not something a rename
+ * should touch. A full stop at the end of a sentence still counts; only a dot
+ * followed by more letters, as in `.in`, is read as part of an address.
  */
 function brandPattern(name: string): RegExp {
   const words = name
     .trim()
     .split(/\s+/)
     .map((word) => word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
-  return new RegExp(words.join('\\s*'), 'gi')
+  return new RegExp(
+    `(?<![\\w@/.-])${words.join('\\s*')}(?!\\.\\w)(?![\\w-])`,
+    'gi',
+  )
 }
 
 /** Every string inside a settings row, however deeply nested. */
