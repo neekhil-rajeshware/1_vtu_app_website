@@ -5,8 +5,8 @@ import type { HomeSection } from '@/lib/content'
 const STEPS = [
   {
     icon: Download,
-    title: 'Install and open',
-    body: 'Free from Google Play. No account needed to look around — you can browse the syllabus and papers straight away.',
+    title: 'Install and sign in',
+    body: 'Free from Google Play. Register with an email address or sign in with Google — your account is what keeps your attendance, marks and progress yours when you change phone.',
   },
   {
     icon: GraduationCap,

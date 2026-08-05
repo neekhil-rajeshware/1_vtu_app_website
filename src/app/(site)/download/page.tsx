@@ -28,7 +28,7 @@ export default async function DownloadPage() {
       <PageHeader
         eyebrow="Download"
         title={`Get ${site.name} on Android`}
-        subtitle="Free, no subscription, and no account needed just to look around."
+        subtitle="Free, no subscription. A free account keeps your attendance, marks and progress yours across phones."
       />
 
       <Section>

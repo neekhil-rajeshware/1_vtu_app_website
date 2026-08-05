@@ -12,11 +12,13 @@ import type { AllSettings } from '@/lib/settings'
 const PACKAGE_NAME = 'com.oneedtech.onevtu'
 
 /**
- * States plainly what the app is for, that an account is optional, and what
+ * States plainly what the app is for, that an account is required, and what
  * the Google permissions are used for. Google's OAuth branding review checks
  * the home page for exactly this, and students deserve the same answer before
- * they install. Wording per card is fixed; the heading comes from Admin → Home
- * page like every other section.
+ * they install. Keep it matching the app: the app gates everything behind
+ * sign-in, so nothing here may suggest you can browse without an account.
+ * Wording per card is fixed; the heading comes from Admin → Home page like
+ * every other section.
  */
 export function AccountAndData({
   section,
@@ -32,12 +34,12 @@ export function AccountAndData({
     {
       icon: Smartphone,
       title: 'What the app is for',
-      body: `${appName} is a free Android app for engineering students of Visvesvaraya Technological University. It brings the syllabus, previous year question papers, formulas, unit converters, attendance, CGPA and a set of AI study tools into one place, filtered to your branch, scheme and semester. Browsing all of it needs no account at all.`,
+      body: `${appName} is a free Android app for engineering students of Visvesvaraya Technological University. It brings the syllabus, previous year question papers, formulas, unit converters, attendance, CGPA and a set of AI study tools into one place, filtered to your branch, scheme and semester. It is free to use and paid for by ads.`,
     },
     {
       icon: KeyRound,
-      title: 'Signing in with Google is optional',
-      body: `Sign in only if you want your profile, attendance, rewards and study progress to survive a new phone. ${appName} receives your name, email address and profile picture from your Google account, and uses them to recognise you when you come back. Nothing is posted anywhere on your behalf.`,
+      title: 'Why you need an account',
+      body: `${appName} asks you to sign in before you use it. Your attendance, marks, rewards and study progress are yours, and an account is what lets them follow you to a new phone instead of disappearing with the old one. You can register with an email address and password, or sign in with Google — in which case ${appName} receives your name, email address and profile picture from your Google account, and uses them to recognise you when you come back. Nothing is ever posted anywhere on your behalf.`,
     },
     {
       icon: HardDriveUpload,
@@ -54,7 +56,7 @@ export function AccountAndData({
           title={section?.heading || 'What it does, and what signing in gives you'}
           subtitle={
             section?.subheading ??
-            'No sign-up, no account needed to look around, and every permission explained before you grant it.'
+            'A free account, the Google permissions the app asks for, and what each one is used for.'
           }
         />
 
