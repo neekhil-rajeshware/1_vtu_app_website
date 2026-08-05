@@ -67,6 +67,14 @@ export default async function HomePage() {
     <>
       {visible('hero') ? <Hero settings={settings} /> : null}
       {visible('stats') ? <StatsStrip stats={stats} /> : null}
+      {/*
+        Kept high on the page on purpose: this is where both a student and
+        Google's OAuth reviewer find out what the app is and what it does with
+        a Google account, without having to scroll for it.
+      */}
+      {visible('account') ? (
+        <AccountAndData section={sections.account} settings={settings} />
+      ) : null}
       {visible('highlights') ? (
         <Highlights section={sections.highlights} features={highlights} />
       ) : null}
@@ -74,9 +82,6 @@ export default async function HomePage() {
         <ScreenshotShowcase section={sections.screenshots} screenshots={screenshots} />
       ) : null}
       {visible('how') ? <HowItWorks section={sections.how} /> : null}
-      {visible('account') ? (
-        <AccountAndData section={sections.account} settings={settings} />
-      ) : null}
       {visible('why') ? <WhyUs section={sections.why} /> : null}
       {visible('features') ? (
         <FeatureGroups section={sections.features} features={features} />

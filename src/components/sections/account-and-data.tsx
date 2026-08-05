@@ -5,6 +5,13 @@ import type { HomeSection } from '@/lib/content'
 import type { AllSettings } from '@/lib/settings'
 
 /**
+ * The Android package the site belongs to. Written out because Google's OAuth
+ * review has to tie this home page to the app on the consent screen, and the
+ * Play Store link is not filled in yet.
+ */
+const PACKAGE_NAME = 'com.oneedtech.onevtu'
+
+/**
  * States plainly what the app is for, that an account is optional, and what
  * the Google permissions are used for. Google's OAuth branding review checks
  * the home page for exactly this, and students deserve the same answer before
@@ -25,7 +32,7 @@ export function AccountAndData({
     {
       icon: Smartphone,
       title: 'What the app is for',
-      body: `${appName} is a study app for VTU engineering students. It brings the syllabus, previous year question papers, formulas, unit converters, attendance, CGPA and a set of AI study tools into one place, filtered to your branch, scheme and semester. Browsing all of it needs no account at all.`,
+      body: `${appName} is a free Android app for engineering students of Visvesvaraya Technological University. It brings the syllabus, previous year question papers, formulas, unit converters, attendance, CGPA and a set of AI study tools into one place, filtered to your branch, scheme and semester. Browsing all of it needs no account at all.`,
     },
     {
       icon: KeyRound,
@@ -69,7 +76,11 @@ export function AccountAndData({
         </div>
 
         <p className="mt-8 text-center text-sm text-muted-foreground">
-          The full detail is in our{' '}
+          {appName} is an Android app, published as{' '}
+          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+            {PACKAGE_NAME}
+          </code>
+          . The full detail is in our{' '}
           <Link href="/privacy-policy" className="font-semibold text-primary underline-offset-4 hover:underline">
             privacy policy
           </Link>
