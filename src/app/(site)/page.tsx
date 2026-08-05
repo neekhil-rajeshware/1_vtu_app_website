@@ -1,3 +1,4 @@
+import { AccountAndData } from '@/components/sections/account-and-data'
 import { BlogTeaser } from '@/components/sections/blog-teaser'
 import { ClosingCta } from '@/components/sections/closing-cta'
 import { FaqSection } from '@/components/sections/faq'
@@ -73,6 +74,9 @@ export default async function HomePage() {
         <ScreenshotShowcase section={sections.screenshots} screenshots={screenshots} />
       ) : null}
       {visible('how') ? <HowItWorks section={sections.how} /> : null}
+      {visible('account') ? (
+        <AccountAndData section={sections.account} settings={settings} />
+      ) : null}
       {visible('why') ? <WhyUs section={sections.why} /> : null}
       {visible('features') ? (
         <FeatureGroups section={sections.features} features={features} />
