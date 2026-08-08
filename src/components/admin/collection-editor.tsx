@@ -74,6 +74,7 @@ export function CollectionEditor({
   emptyTitle,
   emptyDescription,
   defaults = {},
+  rowAction,
 }: {
   table: string
   fields: CollectionField[]
@@ -89,6 +90,13 @@ export function CollectionEditor({
   emptyTitle?: string
   emptyDescription?: string
   defaults?: Record<string, unknown>
+  /**
+   * An extra control shown on each row, before edit and delete. Added for the
+   * push page, whose rows need a "Send" that is not add/edit/delete — the
+   * alternative was a second copy of all the CRUD below. `reload` re-reads the
+   * list so the action can show its own result.
+   */
+  rowAction?: (row: Row, reload: () => Promise<void>) => React.ReactNode
 }) {
   const router = useRouter()
   const [rows, setRows] = useState<Row[] | null>(null)
@@ -266,6 +274,7 @@ export function CollectionEditor({
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1">
+                  {rowAction ? rowAction(row, load) : null}
                   {hasActive ? (
                     <button
                       type="button"

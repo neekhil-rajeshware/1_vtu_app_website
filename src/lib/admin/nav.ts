@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   BadgeCheck,
   Bell,
+  BellRing,
   Building2,
   FileText,
   Flag,
@@ -48,6 +49,17 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         label: 'Dashboard',
         icon: Gauge,
         hint: 'What needs your attention right now.',
+      },
+    ],
+  },
+  {
+    title: 'The app',
+    items: [
+      {
+        href: '/admin/push',
+        label: 'Push notifications',
+        icon: BellRing,
+        hint: 'Send a notification to students’ phones.',
       },
     ],
   },

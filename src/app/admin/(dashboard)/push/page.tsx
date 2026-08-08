@@ -1,0 +1,66 @@
+import { AdminCard } from '@/components/admin/fields'
+import { PushEditor } from '@/components/admin/push-editor'
+import { createClient } from '@/lib/supabase/server'
+
+export const metadata = { title: 'Push notifications' }
+
+/**
+ * Announcements that can be pushed to the app.
+ *
+ * The branch list is read from `branches` rather than typed, because the branch
+ * saved here has to match the branch on a student's profile character for
+ * character — the app fills that in from their USN using this same table. A
+ * hand-typed "CSE" against a profile that says "Computer Science and
+ * Engineering" would send successfully and reach nobody.
+ */
+export default async function AdminPushPage() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('branches')
+    .select('name')
+    .order('name', { ascending: true })
+
+  const branchOptions = Array.from(
+    new Set(
+      (data ?? [])
+        .map((row) => String(row.name ?? '').trim())
+        .filter((name) => name.length > 0),
+    ),
+  )
+
+  return (
+    <div className="space-y-4">
+      <AdminCard title="How this works">
+        <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+          <p>
+            Write the announcement first — it appears in the app on its own, in
+            the notifications list. Then press the <strong>send</strong> arrow on
+            its row to also push it to phones. Two steps on purpose: a typo you
+            spot afterwards is an edit, not a second buzz for every student.
+          </p>
+          <p>
+            <strong>Who gets it</strong> is the branch, scheme and semester on
+            the announcement. Leave all three on “Every…” to reach everyone. A
+            student whose profile is missing one of the fields you narrow by will
+            not receive it, so keep targeting broad unless it truly only concerns
+            one group.
+          </p>
+          <p>
+            Sending cannot be undone, and phones that are switched off get it
+            when they next come online. Students who have muted the
+            “Announcements” category in Android settings will not see it.
+          </p>
+          {branchOptions.length === 0 ? (
+            <p className="text-foreground">
+              No branches are set up yet, so announcements can only go to every
+              branch at once. Add rows to the <code>branches</code> table to
+              target one.
+            </p>
+          ) : null}
+        </div>
+      </AdminCard>
+
+      <PushEditor branchOptions={branchOptions} />
+    </div>
+  )
+}
