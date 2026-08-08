@@ -193,7 +193,7 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         href: '/admin/account',
         label: 'My account',
         icon: UserCog,
-        hint: 'Change your own password.',
+        hint: 'Your password and two-step verification.',
       },
     ],
   },
