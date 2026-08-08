@@ -43,8 +43,16 @@ export function PushSendButton({
     setBusy(false)
 
     if (preview.error || preview.data?.ok === false) {
+      toast.error(`Could not check: ${await describeError(preview)}`)
+      return
+    }
+
+    if (preview.data?.secretConfigured === false) {
       toast.error(
-        `Could not check: ${preview.data?.error ?? preview.error?.message ?? 'unknown error'}`,
+        'Sending is not set up yet: the FCM_SERVICE_ACCOUNT secret is missing ' +
+          'in Supabase. Add it under Edge Functions → Secrets, using the JSON ' +
+          'from Firebase Console → Project settings → Service accounts.',
+        { duration: 12000 },
       )
       return
     }
@@ -62,13 +70,15 @@ export function PushSendButton({
     }
 
     setBusy(true)
-    const { data, error } = await supabase.functions.invoke('send-push', {
+    const result = await supabase.functions.invoke('send-push', {
       body: { id: row.id },
     })
     setBusy(false)
 
-    if (error || data?.ok === false) {
-      toast.error(`Not sent: ${data?.error ?? error?.message ?? 'unknown error'}`)
+    if (result.error || result.data?.ok === false) {
+      toast.error(`Not sent: ${await describeError(result)}`, {
+        duration: 12000,
+      })
       await reload()
       return
     }
@@ -108,4 +118,35 @@ function describeAudience(row: Row): string {
   if (row.scheme_code) parts.push(`${row.scheme_code} scheme`)
   if (row.semester) parts.push(`semester ${row.semester}`)
   return parts.length === 0 ? 'every student' : parts.join(', ') + ' students'
+}
+
+/**
+ * Digs the function's own error message out of a failed `invoke`.
+ *
+ * Necessary because supabase-js throws away the response body on any non-2xx:
+ * it hands back `{ data: null, error: FunctionsHttpError }`, and that error's
+ * message is the useless constant "Edge Function returned a non-2xx status
+ * code". The actual reason — missing secret, not an admin, row not found — is
+ * in the body, reachable only through `error.context`, which is the raw
+ * `Response`. Without this the dashboard reports every distinct failure as the
+ * same sentence.
+ */
+async function describeError(result: {
+  data?: { error?: unknown } | null
+  error?: { message?: string; context?: unknown } | null
+}): Promise<string> {
+  if (result.data?.error) return String(result.data.error)
+
+  const context = result.error?.context
+  if (context instanceof Response) {
+    try {
+      // Cloned so a caller that reads the body later still can.
+      const body = await context.clone().json()
+      if (body?.error) return String(body.error)
+    } catch {
+      // Not JSON, or already consumed — fall through to the generic message.
+    }
+  }
+
+  return result.error?.message ?? 'unknown error'
 }
