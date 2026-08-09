@@ -71,11 +71,7 @@ export default function AdminAnnouncementCategoriesPage() {
             help: 'Capitals and underscores. Saved onto every announcement of this kind.',
             // Typed however the admin likes, stored the one way the column
             // accepts — the alternative is a CHECK violation on save.
-            transform: (value) =>
-              value
-                .toUpperCase()
-                .replace(/[^A-Z0-9_]+/g, '_')
-                .slice(0, 40),
+            transform: 'code',
             lockOnEdit: true,
           },
           {

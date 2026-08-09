@@ -53,16 +53,35 @@ export type CollectionField = {
   half?: boolean
   required?: boolean
   /**
-   * Cleans up each keystroke on a plain text field — upper-casing a code,
-   * stripping spaces from a key. Runs before the value is stored, so what the
-   * admin sees is what gets saved.
+   * Cleans up each keystroke on a plain text field.
+   *
+   * A **name**, not a function, because every admin page is a Server Component
+   * and this config crosses into a Client Component — React cannot serialize a
+   * function over that boundary, and passing one is a 500 at request time, not
+   * a build error. Add a case to [applyTransform] rather than a callback here.
+   *
+   * - `code` — upper-cases and replaces anything but A-Z, 0-9 and `_` with an
+   *   underscore. For a column another table refers to by value.
    */
-  transform?: (value: string) => string
+  transform?: 'code'
   /**
    * Shown but not editable once the record exists. For columns other rows point
    * at by value: changing one after the fact silently strands them.
    */
   lockOnEdit?: boolean
+}
+
+/** Applies a [CollectionField.transform] by name. See there for why by name. */
+function applyTransform(
+  transform: CollectionField['transform'],
+  value: string,
+): string {
+  switch (transform) {
+    case 'code':
+      return value.toUpperCase().replace(/[^A-Z0-9_]+/g, '_')
+    default:
+      return value
+  }
 }
 
 export type Row = Record<string, unknown> & { id: string }
@@ -593,7 +612,7 @@ function RecordDialog({
             disabled={field.lockOnEdit === true && row !== null}
             value={text(field.name)}
             onChange={(value) =>
-              set(field.name, field.transform ? field.transform(value) : value)
+              set(field.name, applyTransform(field.transform, value))
             }
           />
         )
