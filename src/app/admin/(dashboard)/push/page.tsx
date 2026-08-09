@@ -7,26 +7,43 @@ export const metadata = { title: 'Push notifications' }
 /**
  * Announcements that can be pushed to the app.
  *
- * The branch list is read from `branches` rather than typed, because the branch
- * saved here has to match the branch on a student's profile character for
- * character — the app fills that in from their USN using this same table. A
- * hand-typed "CSE" against a profile that says "Computer Science and
- * Engineering" would send successfully and reach nobody.
+ * Two lists are read here rather than typed into the form.
+ *
+ * The **branch** list comes from `branches` because the branch saved here has to
+ * match the branch on a student's profile character for character — the app
+ * fills that in from their USN using this same table. A hand-typed "CSE"
+ * against a profile that says "Computer Science and Engineering" would send
+ * successfully and reach nobody.
+ *
+ * The **kind** list comes from `notification_categories`, which the owner edits
+ * on its own page. Only active ones are offered; a retired category is still
+ * readable so announcements already sent under it keep their colour.
  */
 export default async function AdminPushPage() {
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('branches')
-    .select('name')
-    .order('name', { ascending: true })
+  const [branches, categories] = await Promise.all([
+    supabase.from('branches').select('name').order('name', { ascending: true }),
+    supabase
+      .from('notification_categories')
+      .select('key,label,is_active')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true }),
+  ])
 
   const branchOptions = Array.from(
     new Set(
-      (data ?? [])
+      (branches.data ?? [])
         .map((row) => String(row.name ?? '').trim())
         .filter((name) => name.length > 0),
     ),
   )
+
+  const kindOptions = (categories.data ?? [])
+    .map((row) => ({
+      value: String(row.key ?? '').trim(),
+      label: String(row.label ?? '').trim(),
+    }))
+    .filter((option) => option.value !== '' && option.label !== '')
 
   return (
     <div className="space-y-4">
@@ -46,6 +63,11 @@ export default async function AdminPushPage() {
             one group.
           </p>
           <p>
+            <strong>Kind</strong> decides the colour of the notification on the
+            phone. Add, rename or recolour those under{' '}
+            <strong>Announcement kinds</strong> in the menu.
+          </p>
+          <p>
             Sending cannot be undone, and phones that are switched off get it
             when they next come online. Students who have muted the
             “Announcements” category in Android settings will not see it.
@@ -60,7 +82,7 @@ export default async function AdminPushPage() {
         </div>
       </AdminCard>
 
-      <PushEditor branchOptions={branchOptions} />
+      <PushEditor branchOptions={branchOptions} kindOptions={kindOptions} />
     </div>
   )
 }

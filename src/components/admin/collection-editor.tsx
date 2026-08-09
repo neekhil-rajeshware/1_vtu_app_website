@@ -15,12 +15,14 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
+  ColorInput,
   SelectInput,
   TextArea,
   TextInput,
   ToggleRow,
   adminInputClass,
   FieldShell,
+  isHexColor,
 } from '@/components/admin/fields'
 import { ImageInput } from '@/components/admin/image-input'
 import { Button, EmptyState } from '@/components/ui'
@@ -42,6 +44,7 @@ export type CollectionField = {
     | 'date'
     | 'icon'
     | 'tags'
+    | 'color'
   help?: string
   placeholder?: string
   rows?: number
@@ -49,6 +52,17 @@ export type CollectionField = {
   options?: { value: string; label: string }[]
   half?: boolean
   required?: boolean
+  /**
+   * Cleans up each keystroke on a plain text field — upper-casing a code,
+   * stripping spaces from a key. Runs before the value is stored, so what the
+   * admin sees is what gets saved.
+   */
+  transform?: (value: string) => string
+  /**
+   * Shown but not editable once the record exists. For columns other rows point
+   * at by value: changing one after the fact silently strands them.
+   */
+  lockOnEdit?: boolean
 }
 
 export type Row = Record<string, unknown> & { id: string }
@@ -66,6 +80,7 @@ export function CollectionEditor({
   subtitleField,
   imageField,
   iconField,
+  colorField,
   hasActive = true,
   hasSortOrder = true,
   orderBy,
@@ -82,6 +97,8 @@ export function CollectionEditor({
   subtitleField?: string
   imageField?: string
   iconField?: string
+  /** Column holding a hex colour, shown as a swatch where the image would go. */
+  colorField?: string
   hasActive?: boolean
   hasSortOrder?: boolean
   orderBy?: { column: string; ascending?: boolean }
@@ -220,6 +237,7 @@ export function CollectionEditor({
             const hidden = hasActive && row.is_active !== true
             const image = imageField ? String(row[imageField] ?? '') : ''
             const icon = iconField ? String(row[iconField] ?? '') : ''
+            const swatch = colorField ? String(row[colorField] ?? '') : ''
 
             return (
               <li
@@ -260,6 +278,12 @@ export function CollectionEditor({
                   <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary dark:bg-primary/15 dark:text-accent-foreground">
                     <DynamicIcon name={icon} className="h-5 w-5" />
                   </span>
+                ) : swatch ? (
+                  <span
+                    className="h-11 w-11 shrink-0 rounded-lg border border-border"
+                    style={{ backgroundColor: swatch }}
+                    title={swatch}
+                  />
                 ) : null}
 
                 <div className="min-w-0 flex-1">
@@ -391,6 +415,16 @@ function RecordDialog({
         toast.error(`${field.label} is required.`)
         return
       }
+      // Caught here rather than left to the column's CHECK, which comes back as
+      // a constraint name the admin cannot act on.
+      if (
+        field.type === 'color' &&
+        text(field.name).trim() !== '' &&
+        !isHexColor(text(field.name))
+      ) {
+        toast.error(`${field.label} must be a colour like #16A34A.`)
+        return
+      }
     }
 
     const payload: Record<string, unknown> = {}
@@ -450,14 +484,34 @@ function RecordDialog({
             onChange={(checked) => set(field.name, checked)}
           />
         )
-      case 'select':
+      case 'select': {
+        const current = text(field.name)
+        const options = field.options ?? []
+        // A saved value the list no longer offers — a category that has since
+        // been retired, say. Kept as a choice, because otherwise the select
+        // lands on whichever option is first and opening the record to fix a
+        // typo would quietly change its kind.
+        const shown =
+          current === '' || options.some((option) => option.value === current)
+            ? options
+            : [...options, { value: current, label: `${current} (no longer offered)` }]
         return (
           <SelectInput
             label={field.label}
             help={field.help}
+            value={current}
+            onChange={(value) => set(field.name, value)}
+            options={shown}
+          />
+        )
+      }
+      case 'color':
+        return (
+          <ColorInput
+            label={field.label}
+            help={field.help}
             value={text(field.name)}
             onChange={(value) => set(field.name, value)}
-            options={field.options ?? []}
           />
         )
       case 'image':
@@ -527,12 +581,20 @@ function RecordDialog({
         return (
           <TextInput
             label={field.label}
-            help={field.help}
+            help={
+              field.lockOnEdit && row
+                ? (field.help ? `${field.help} ` : '') +
+                  'Fixed once saved — records already using it refer to it by this value.'
+                : field.help
+            }
             placeholder={field.placeholder}
             maxLength={field.maxLength}
             type={field.type === 'number' ? 'number' : field.type}
+            disabled={field.lockOnEdit === true && row !== null}
             value={text(field.name)}
-            onChange={(value) => set(field.name, value)}
+            onChange={(value) =>
+              set(field.name, field.transform ? field.transform(value) : value)
+            }
           />
         )
     }

@@ -13,10 +13,21 @@ import { PushSendButton } from '@/components/admin/push-send-button'
  */
 export function PushEditor({
   branchOptions,
+  kindOptions,
 }: {
   /** Branch names exactly as profiles store them — see the page for why. */
   branchOptions: string[]
+  /** Active rows from `notification_categories`, in the owner's own order. */
+  kindOptions: { value: string; label: string }[]
 }) {
+  // The table is admin-editable and could in principle be emptied, and the app
+  // reads `notif_type` off every row it draws. One fallback that matches the
+  // seeded default keeps the form usable rather than offering an empty select.
+  const kinds =
+    kindOptions.length > 0
+      ? kindOptions
+      : [{ value: 'NOTIFICATION', label: 'Notification' }]
+
   return (
     <CollectionEditor
       table="notifications"
@@ -26,7 +37,11 @@ export function PushEditor({
       subtitleField="description"
       hasSortOrder={false}
       orderBy={{ column: 'published_at', ascending: false }}
-      defaults={{ is_active: true, push_enabled: true, notif_type: 'general' }}
+      defaults={{
+        is_active: true,
+        push_enabled: true,
+        notif_type: kinds[0].value,
+      }}
       emptyTitle="No announcements yet"
       emptyDescription="Write one, check who it is going to, then press Send."
       rowAction={(row: Row, reload) => (
@@ -55,12 +70,8 @@ export function PushEditor({
           label: 'Kind',
           type: 'select',
           half: true,
-          options: [
-            { value: 'general', label: 'General' },
-            { value: 'circular', label: 'Circular' },
-            { value: 'calendar', label: 'Academic calendar' },
-            { value: 'scholarship', label: 'Scholarship' },
-          ],
+          options: kinds,
+          help: 'Sets the colour of the notification. Edit the list under “Announcement kinds”.',
         },
         {
           name: 'external_url',

@@ -81,6 +81,7 @@ export function TextInput({
   maxLength,
   type = 'text',
   className,
+  disabled = false,
 }: {
   label: string
   help?: string
@@ -90,6 +91,7 @@ export function TextInput({
   maxLength?: number
   type?: 'text' | 'email' | 'url' | 'number' | 'date' | 'password'
   className?: string
+  disabled?: boolean
 }) {
   const id = useId()
   return (
@@ -99,10 +101,79 @@ export function TextInput({
         type={type}
         value={value}
         maxLength={maxLength}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className={adminInputClass}
+        className={cn(
+          adminInputClass,
+          disabled && 'cursor-not-allowed text-muted-foreground opacity-70',
+        )}
         placeholder={placeholder}
       />
+    </FieldShell>
+  )
+}
+
+/** Shown by the picker when the typed value is not yet a usable colour. */
+const COLOR_PLACEHOLDER = '#6B7280'
+
+/** Whether a string is the six-digit hex the database will accept. */
+export function isHexColor(value: string): boolean {
+  return /^#[0-9A-Fa-f]{6}$/.test(value.trim())
+}
+
+/**
+ * A colour, picked or typed.
+ *
+ * Both halves edit the same value: the swatch for choosing one, the text box for
+ * pasting a brand colour someone sent you. The text box is the source of truth
+ * and is not corrected as you type — a half-typed `#16A` is not yet valid, and
+ * rewriting it under the cursor makes the field impossible to use. It is
+ * flagged instead, and the picker falls back to grey until the value parses.
+ */
+export function ColorInput({
+  label,
+  help,
+  value,
+  onChange,
+  className,
+}: {
+  label: string
+  help?: string
+  value: string
+  onChange: (value: string) => void
+  className?: string
+}) {
+  const id = useId()
+  const trimmed = value.trim()
+  const valid = isHexColor(trimmed)
+
+  return (
+    <FieldShell label={label} help={help} htmlFor={id} className={className}>
+      <div className="flex items-center gap-2">
+        <input
+          type="color"
+          aria-label={`${label}: pick a colour`}
+          value={valid ? trimmed : COLOR_PLACEHOLDER}
+          onChange={(e) => onChange(e.target.value.toUpperCase())}
+          className="h-11 w-14 shrink-0 cursor-pointer rounded-xl border border-input bg-background p-1"
+        />
+        <input
+          id={id}
+          type="text"
+          inputMode="text"
+          spellCheck={false}
+          value={value}
+          maxLength={7}
+          onChange={(e) => onChange(e.target.value.toUpperCase())}
+          className={cn(adminInputClass, 'font-mono')}
+          placeholder={COLOR_PLACEHOLDER}
+        />
+      </div>
+      {trimmed !== '' && !valid ? (
+        <p className="mt-1.5 text-xs font-medium text-secondary">
+          Needs a hash and six digits, like {COLOR_PLACEHOLDER}.
+        </p>
+      ) : null}
     </FieldShell>
   )
 }
