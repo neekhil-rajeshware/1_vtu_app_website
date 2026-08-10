@@ -14,11 +14,14 @@ import { PushSendButton } from '@/components/admin/push-send-button'
 export function PushEditor({
   branchOptions,
   kindOptions,
+  schemeOptions,
 }: {
   /** Branch names exactly as profiles store them — see the page for why. */
   branchOptions: string[]
   /** Active rows from `notification_categories`, in the owner's own order. */
   kindOptions: { value: string; label: string }[]
+  /** Rows from `schemes`, keyed by `scheme_code` — see the page for why. */
+  schemeOptions: { value: string; label: string }[]
 }) {
   // The table is admin-editable and could in principle be emptied, and the app
   // reads `notif_type` off every row it draws. One fallback that matches the
@@ -97,13 +100,8 @@ export function PushEditor({
           label: 'Scheme',
           type: 'select',
           half: true,
-          options: [
-            { value: '', label: 'Every scheme' },
-            { value: '2025', label: '2025' },
-            { value: '2022', label: '2022' },
-            { value: '2021', label: '2021' },
-            { value: '2018', label: '2018' },
-          ],
+          options: [{ value: '', label: 'Every scheme' }, ...schemeOptions],
+          help: 'The scheme codes the app itself uses. Targeting by scheme only reaches students who picked one in their profile.',
         },
         {
           name: 'semester',
