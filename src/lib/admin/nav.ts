@@ -7,6 +7,7 @@ import {
   FileText,
   Flag,
   Gauge,
+  Heart,
   HelpCircle,
   Image as ImageIcon,
   Images,
@@ -183,6 +184,12 @@ export const ADMIN_NAV: AdminNavGroup[] = [
         label: 'In-app links',
         icon: LinkIcon,
         hint: 'Change where buttons inside the app go, with no app update.',
+      },
+      {
+        href: '/admin/support',
+        label: 'Support page',
+        icon: Heart,
+        hint: 'The Razorpay button students contribute through.',
       },
       {
         href: '/admin/ads-txt',

@@ -98,6 +98,25 @@ export type AdsTxtSettings = {
 }
 
 /**
+ * The Razorpay Payment Button behind /support.
+ *
+ * Only the button id lives here — the amount, colour, label and description are
+ * the button's own settings in the Razorpay dashboard, and the embed script
+ * fetches those at render time. So re-pricing a contribution needs neither this
+ * field nor a deploy.
+ *
+ * A button belongs to one Razorpay mode: a test-mode id renders nothing on the
+ * live site, and vice versa.
+ *
+ * Blank switches the payment card off and leaves the rest of the page up, which
+ * is the safe state while a button is being swapped.
+ */
+export type SupportSettings = {
+  razorpay_button_id: string
+  intro: string
+}
+
+/**
  * Who publishes the app, in the sense the law and Google Play mean it. These
  * values are typed once here and appear on every legal page through the
  * placeholders below, so the developer name, address or governing law is never
@@ -136,6 +155,7 @@ export type AllSettings = {
   footer: FooterSettings
   about: AboutSettings
   adstxt: AdsTxtSettings
+  support: SupportSettings
   developer: DeveloperSettings
   screens: ScreensSettings
 }
@@ -178,6 +198,11 @@ export const FALLBACK_SETTINGS: AllSettings = {
   footer: { description: '', disclaimer: '', copyright: DEFAULT_APP_NAME },
   about: { heading: '', story: '', mission: '' },
   adstxt: { content: '' },
+  support: {
+    razorpay_button_id: 'pl_TasyXmSduWY9FT',
+    intro:
+      'Every contribution goes straight back into the app — servers, the AI features, and the time it takes to keep notes, question papers and results up to date.',
+  },
   developer: {
     legal_name: '',
     email: '',

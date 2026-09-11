@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Heart, Lock, Sparkles } from 'lucide-react'
 import { RazorpayButton } from '@/components/razorpay-button'
 import { Card, Container, PageHeader, Section } from '@/components/ui'
+import { getSettings } from '@/lib/settings'
 
 export const metadata: Metadata = {
   title: 'Support the Developer',
@@ -19,10 +20,15 @@ export const metadata: Metadata = {
  * credits and removes no ads — that's what keeps it outside Play's in-app
  * purchase rules, which would otherwise require Play Billing instead of an
  * external payment page.
+ *
+ * The button id comes from Settings → Support, so swapping the button is a
+ * dashboard edit rather than a deploy. Blank hides the payment card and leaves
+ * the rest of the page standing.
  */
-const RAZORPAY_BUTTON_ID = 'pl_TasyXmSduWY9FT'
+export default async function SupportPage() {
+  const { support } = await getSettings()
+  const buttonId = support.razorpay_button_id.trim()
 
-export default function SupportPage() {
   return (
     <>
       <PageHeader
@@ -33,26 +39,28 @@ export default function SupportPage() {
 
       <Section>
         <Container className="max-w-2xl space-y-4">
-          <Card>
-            <h2 className="flex items-center gap-2 text-sm font-bold">
-              <Heart className="h-4 w-4 text-secondary" />
-              Contribute any amount
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Every contribution goes straight back into the app — servers, the
-              AI features, and the time it takes to keep notes, question papers
-              and results up to date.
-            </p>
-            <div className="mt-5">
-              <RazorpayButton buttonId={RAZORPAY_BUTTON_ID} />
-            </div>
-            <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
-              <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Payments are processed by Razorpay. Cards, UPI, netbanking and
-              wallets are all supported, and One VTU never sees your payment
-              details.
-            </p>
-          </Card>
+          {buttonId ? (
+            <Card>
+              <h2 className="flex items-center gap-2 text-sm font-bold">
+                <Heart className="h-4 w-4 text-secondary" />
+                Contribute any amount
+              </h2>
+              {support.intro.trim() ? (
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {support.intro}
+                </p>
+              ) : null}
+              <div className="mt-5">
+                <RazorpayButton buttonId={buttonId} />
+              </div>
+              <p className="mt-4 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                Payments are processed by Razorpay. Cards, UPI, netbanking and
+                wallets are all supported, and One VTU never sees your payment
+                details.
+              </p>
+            </Card>
+          ) : null}
 
           <Card>
             <h2 className="flex items-center gap-2 text-sm font-bold">
