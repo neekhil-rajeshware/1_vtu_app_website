@@ -21,6 +21,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string
     links: [
       { href: '/about', label: 'About us' },
       { href: '/contact', label: 'Contact' },
+      { href: '/support', label: 'Support the developer' },
       { href: '/community-guidelines', label: 'Community guidelines' },
       { href: '/report', label: 'Report content' },
     ],

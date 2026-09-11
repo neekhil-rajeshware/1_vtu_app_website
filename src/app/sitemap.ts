@@ -13,6 +13,7 @@ const STATIC_ROUTES: Array<{
   { path: '/download', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/about', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/support', priority: 0.5, changeFrequency: 'yearly' },
   { path: '/blog', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/community-guidelines', priority: 0.5, changeFrequency: 'yearly' },
   { path: '/report', priority: 0.4, changeFrequency: 'yearly' },
