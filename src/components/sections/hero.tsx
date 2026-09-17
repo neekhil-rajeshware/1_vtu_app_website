@@ -1,12 +1,19 @@
-import { ArrowRight, Download, ShieldCheck, Sparkles, WifiOff } from 'lucide-react'
+import { ArrowRight, Download, GraduationCap, ShieldCheck, Sparkles } from 'lucide-react'
 import { Badge, ButtonLink, Container } from '@/components/ui'
 import { PhoneMockup } from '@/components/phone-mockup'
 import type { AllSettings } from '@/lib/settings'
 import { appName } from '@/lib/settings'
 
+/**
+ * "Works offline" used to sit here and had to go. The app cannot be used
+ * offline: `AuthWrapper` in the Flutter app returns the login screen unless
+ * there is a live session, so a cold start with no connection cannot get past
+ * the front door. The local Hive stores only help someone already signed in.
+ * Do not put an offline claim back without checking that gate first.
+ */
 const TRUST_POINTS = [
   { icon: Download, label: 'Free to download' },
-  { icon: WifiOff, label: 'Works offline' },
+  { icon: GraduationCap, label: 'Matched to your branch & scheme' },
   { icon: ShieldCheck, label: 'Your data stays on your phone' },
 ]
 
