@@ -47,10 +47,10 @@ export function PushEditor({
       hasSortOrder={false}
       orderBy={{ column: 'published_at', ascending: false }}
       defaults={{
-        // A new row is a draft. The database enforces this too, including for
-        // announcements written straight into the table by the scheduled VTU
-        // circular job — see `docs/sql/034_notifications_publish_on_push.sql`
-        // in the app repo. This default is here so the form agrees with it.
+        // A new row is a draft, and the database enforces that whatever this
+        // form sends — including for announcements written straight into the
+        // table by the scheduled VTU circular job. See
+        // `docs/sql/034_notifications_publish_on_push.sql` in the app repo.
         is_active: false,
         push_enabled: true,
         notif_type: kinds[0].value,
@@ -142,7 +142,7 @@ export function PushEditor({
           name: 'is_active',
           label: 'Visible in the app',
           type: 'toggle',
-          help: 'Turns itself on when you press Send. Until then the announcement is a draft that no student can see — including one written by the scheduled circular job. Turn it on by hand to publish without notifying anyone.',
+          help: 'A new announcement is always saved as a draft — no student can see it until you press Send, which switches this on for you. Save it first and turn this on afterwards to publish without notifying anyone.',
         },
       ]}
     />
