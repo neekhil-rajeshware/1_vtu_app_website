@@ -70,3 +70,37 @@ export async function requireAdmin(): Promise<AdminUser> {
 
   return { id: user.id, email: user.email ?? '' }
 }
+
+/**
+ * The same three checks as [requireAdmin], answered yes or no.
+ *
+ * A Server Action needs this shape rather than a redirect: it is a POST from a
+ * page that is already open, so the useful reply to a session that went stale is
+ * a message the page can show, not a redirect the caller never sees.
+ *
+ * Rendering a page is not a security boundary — a Server Action is reachable by
+ * anyone who can send the same POST — so every action calls this itself rather
+ * than trusting the layout that rendered the form.
+ */
+export async function isAdminSession(): Promise<boolean> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return false
+
+  const { data: adminRow } = await supabase
+    .from('web_admins')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!adminRow) return false
+
+  // Verified signature, not the cookie's own word for it — see above.
+  const { data: claims } = await supabase.auth.getClaims()
+
+  return claims?.claims.aal === 'aal2'
+}
