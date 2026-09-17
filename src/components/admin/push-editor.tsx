@@ -6,10 +6,16 @@ import { PushSendButton } from '@/components/admin/push-send-button'
 /**
  * The announcements list, with a Send button on every row.
  *
- * Writing and sending are deliberately two steps. An announcement is a normal
- * row that the app's Circulars screen shows on its own; the push is an extra
- * that goes out when you press Send. That way a typo is a quick edit rather
- * than a second notification to every student on the platform.
+ * Writing and sending are deliberately two steps, and the second one is what
+ * publishes. A new announcement is saved as a draft — nothing about it reaches
+ * students — and pressing Send both notifies their phones and makes the row
+ * readable in the app. That way a typo is a quick edit rather than a second
+ * notification to everyone on the platform.
+ *
+ * The Send button used to only notify, while the row was live the moment it was
+ * saved, so unpublished announcements showed up in the app anyway. That is the
+ * bug this arrangement fixes; `push-send-button.tsx` and the `send-push` Edge
+ * Function are the other two thirds of it.
  */
 export function PushEditor({
   branchOptions,
@@ -41,12 +47,16 @@ export function PushEditor({
       hasSortOrder={false}
       orderBy={{ column: 'published_at', ascending: false }}
       defaults={{
-        is_active: true,
+        // A new row is a draft. The database enforces this too, including for
+        // announcements written straight into the table by the scheduled VTU
+        // circular job — see `docs/sql/034_notifications_publish_on_push.sql`
+        // in the app repo. This default is here so the form agrees with it.
+        is_active: false,
         push_enabled: true,
         notif_type: kinds[0].value,
       }}
       emptyTitle="No announcements yet"
-      emptyDescription="Write one, check who it is going to, then press Send."
+      emptyDescription="Write one, check who it is going to, then press Send to publish it."
       rowAction={(row: Row, reload) => (
         <PushSendButton row={row} reload={reload} />
       )}
@@ -126,12 +136,13 @@ export function PushEditor({
           name: 'push_enabled',
           label: 'Allow sending to phones',
           type: 'toggle',
-          help: 'Turn off for something that should sit in the app without a notification. The Send button disappears.',
+          help: 'Turn off for something that should sit in the app without a notification. The Send button disappears, so publish it with the switch below instead.',
         },
         {
           name: 'is_active',
           label: 'Visible in the app',
           type: 'toggle',
+          help: 'Turns itself on when you press Send. Until then the announcement is a draft that no student can see — including one written by the scheduled circular job. Turn it on by hand to publish without notifying anyone.',
         },
       ]}
     />

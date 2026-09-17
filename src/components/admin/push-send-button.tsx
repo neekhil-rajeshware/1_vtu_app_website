@@ -9,6 +9,12 @@ import type { Row } from '@/components/admin/collection-editor'
 /**
  * Sends one announcement to phones, through the `send-push` Edge Function.
  *
+ * This is also the button that publishes. The row stays a draft — invisible in
+ * the app — until the function reports that FCM accepted the send, at which
+ * point it is marked visible in the same step. So "sent" and "students can read
+ * it" are the same event, and there is no way to show an announcement in the
+ * app without having notified anyone about it.
+ *
  * The function is called rather than FCM directly because the FCM service
  * account must not live in this repo — this codebase has no server-side secret
  * at all, only the publishable key and RLS, and the send is authorized by the
@@ -58,12 +64,18 @@ export function PushSendButton({
     }
 
     const audience = describeAudience(row)
+    // "Publish" is spelled out because this button is the only thing that makes
+    // the announcement readable in the app — an admin who expects it to be live
+    // already, the way it used to be, needs to know the send is what does it.
+    const publish = row.is_active === false
+      ? '\n\nThis also publishes it: it becomes visible in the app at the same moment.'
+      : ''
     const again = sentAt
       ? '\n\nThis was already sent once. Sending again will notify everyone a second time.'
       : ''
     if (
       !window.confirm(
-        `Send “${title}” to ${audience}?\n\nThis goes to phones straight away and cannot be undone.${again}`,
+        `Send “${title}” to ${audience}?\n\nThis goes to phones straight away and cannot be undone.${publish}${again}`,
       )
     ) {
       return
@@ -83,7 +95,11 @@ export function PushSendButton({
       return
     }
 
-    toast.success(`Sent to ${audience}.`)
+    toast.success(
+      row.is_active === false
+        ? `Sent to ${audience} and published in the app.`
+        : `Sent to ${audience}.`,
+    )
     await reload()
   }
 
