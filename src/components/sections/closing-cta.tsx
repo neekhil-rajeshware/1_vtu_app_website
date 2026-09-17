@@ -43,20 +43,14 @@ export function ClosingCta({
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <ButtonLink
                 href={settings.download.play_store_url || undefined}
-                variant="outline"
+                variant="inverse"
                 size="lg"
-                className="border-transparent bg-white text-[#0b1220] hover:bg-white/90"
                 unavailableTitle="Launching on Google Play soon"
               >
                 <Download className="h-[1.15rem] w-[1.15rem]" />
                 Download free
               </ButtonLink>
-              <ButtonLink
-                href="/features"
-                variant="ghost"
-                size="lg"
-                className="text-primary-foreground hover:bg-white/15 hover:text-primary-foreground"
-              >
+              <ButtonLink href="/features" variant="onBrand" size="lg">
                 Explore features
                 <ArrowRight className="h-[1.15rem] w-[1.15rem]" />
               </ButtonLink>

@@ -131,7 +131,9 @@ export default async function HomePage() {
         <Testimonials section={sections.testimonials} testimonials={testimonials} />
       ) : null}
       {visible('blog') ? <BlogTeaser section={sections.blog} posts={posts} /> : null}
-      {visible('faq') ? <FaqSection section={sections.faq} faqs={faqs} /> : null}
+      {visible('faq') ? (
+        <FaqSection section={sections.faq} faqs={faqs} grouped />
+      ) : null}
       {visible('cta') ? (
         <ClosingCta section={sections.cta} settings={settings} />
       ) : null}

@@ -28,6 +28,19 @@ const BUTTON_VARIANTS = {
   outline: 'border border-border bg-card text-foreground hover:bg-muted',
   ghost: 'text-muted-foreground hover:bg-muted hover:text-foreground',
   danger: 'bg-destructive text-destructive-foreground hover:brightness-110',
+  /**
+   * The two variants below are for the brand gradient in the closing CTA.
+   *
+   * They exist as variants rather than as `className` overrides because `cn` is
+   * a plain join, not a tailwind-merge: passing `bg-white` next to the outline
+   * variant's `bg-card` emits *both* classes and leaves the winner to stylesheet
+   * order. That is how the "Download free" button came to render greyed out on
+   * the gradient, and how the same button can come out white-on-white in dark
+   * mode. Do not go back to overriding these with a className.
+   */
+  inverse: 'bg-white text-[#0b1220] shadow-sm hover:bg-white/90',
+  onBrand:
+    'text-primary-foreground hover:bg-white/15 hover:text-primary-foreground',
 } as const
 
 const BUTTON_SIZES = {
@@ -94,6 +107,13 @@ export function ButtonLink({
         aria-disabled="true"
       >
         {children}
+        {/*
+          `title` only ever reaches a mouse. A screen reader announces the
+          label and nothing else, and `aria-disabled` on a <span> is not
+          announced usefully on its own — so the reason is repeated here for
+          anyone who cannot hover.
+        */}
+        <span className="sr-only"> — {unavailableTitle}</span>
       </span>
     )
   }

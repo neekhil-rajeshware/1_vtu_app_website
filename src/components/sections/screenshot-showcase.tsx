@@ -27,7 +27,13 @@ export function ScreenshotShowcase({
         />
       </Container>
 
-      <div className="no-scrollbar mt-12 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:px-6 lg:px-8">
+      {/*
+        Deliberately NOT `no-scrollbar`. Hiding the scrollbar left this row
+        scrollable with no affordance at all — no bar, no arrows, no dots — so
+        the only hint that more screens existed off the right edge was the
+        clipping itself. Keep the native scrollbar as the cue.
+      */}
+      <div className="mt-12 flex snap-x snap-mandatory gap-5 overflow-x-auto px-4 pb-4 sm:px-6 lg:px-8">
         {screenshots.slice(0, 10).map((shot) => (
           <figure key={shot.id} className="w-[13.5rem] shrink-0 snap-center">
             <div className="overflow-hidden rounded-[1.6rem] border border-border bg-card p-1.5 shadow-lg">
