@@ -1,9 +1,12 @@
 import { AdminCard } from '@/components/admin/fields'
 import { CollectionEditor } from '@/components/admin/collection-editor'
+import { getFeaturesWithPages } from '@/lib/content'
 
 export const metadata = { title: 'FAQ' }
 
-export default function AdminFaqsPage() {
+export default async function AdminFaqsPage() {
+  const features = await getFeaturesWithPages()
+
   return (
     <div className="space-y-4">
       <AdminCard title="Where these appear">
@@ -12,6 +15,16 @@ export default function AdminFaqsPage() {
           as structured data, which is how questions sometimes show directly in
           search results. Questions in the <strong>Support</strong> category are
           shown again at the bottom of the Contact page.
+        </p>
+      </AdminCard>
+
+      <AdminCard title="Questions about one feature">
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Set <strong>Show on</strong> to a feature and the question moves off
+          the home page and onto that feature&rsquo;s own page instead. Leave it
+          on <strong>Whole site</strong> for anything general — that is what
+          every existing question is. Only features that already have a web
+          address appear in the list.
         </p>
       </AdminCard>
 
@@ -52,6 +65,22 @@ export default function AdminFaqsPage() {
               { value: 'Features', label: 'Features' },
               { value: 'Privacy', label: 'Privacy' },
               { value: 'Account', label: 'Account' },
+            ],
+          },
+          {
+            name: 'feature_slug',
+            label: 'Show on',
+            type: 'select',
+            half: true,
+            help: 'Whole site puts it on the home page. A feature puts it on that feature’s page only.',
+            options: [
+              { value: '', label: 'Whole site' },
+              ...features
+                .filter((feature) => feature.slug)
+                .map((feature) => ({
+                  value: feature.slug as string,
+                  label: feature.title,
+                })),
             ],
           },
           {

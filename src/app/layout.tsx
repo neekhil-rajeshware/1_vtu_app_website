@@ -2,8 +2,10 @@ import type { Metadata, Viewport } from 'next'
 import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from 'sonner'
+import { JsonLd } from '@/components/json-ld'
 import { ThemeProvider } from '@/components/theme-provider'
 import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
+import { organizationJsonLd, websiteJsonLd } from '@/lib/seo'
 import './globals.css'
 
 const geistSans = Geist({ variable: '--font-sans-stack', subsets: ['latin'] })
@@ -60,7 +62,9 @@ export const viewport: Viewport = {
 export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { seo } = await getSettings()
+  const settings = await getSettings()
+  const { seo } = settings
+  const base = publicWebsiteUrl(settings)
 
   return (
     <html
@@ -69,6 +73,15 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full`}
     >
       <body className="flex min-h-full flex-col">
+        {/*
+          Site-wide structured data. Both blocks describe the publisher and the
+          site, not the page, so they belong here rather than on any one page —
+          and they are what lets Google show the app name and logo against a
+          result instead of inferring them from the title tag.
+        */}
+        <JsonLd data={organizationJsonLd(settings, base)} />
+        <JsonLd data={websiteJsonLd(settings, base)} />
+
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

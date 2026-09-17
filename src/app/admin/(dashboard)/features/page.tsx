@@ -16,6 +16,37 @@ export default function AdminFeaturesPage() {
         </p>
       </AdminCard>
 
+      <AdminCard title="Giving a feature its own page">
+        <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+          <p>
+            Most features are only listed on the Features page, and that is
+            fine. A feature gets a page of its own — at{' '}
+            <code className="rounded bg-muted px-1.5 py-0.5 text-xs">
+              onevtu.in/features/your-web-address
+            </code>{' '}
+            — only once you fill in <strong>Web address</strong>.
+          </p>
+          <p>
+            Give one to the handful of features students search for by name:
+            the ones where somebody types &ldquo;VTU CGPA calculator&rdquo; into
+            Google rather than looking for your app. Every one of the 33 getting
+            a page would leave 33 near-identical pages competing with each
+            other, which search engines treat as filler.
+          </p>
+          <p>
+            <strong>Web address is locked once you save it.</strong> Changing it
+            later breaks any link anyone has already shared, so pick the words
+            you want and leave them alone. Clearing it removes the page.
+          </p>
+          <p>
+            The <strong>Page headline</strong> is the version Google shows. Put
+            the word &ldquo;VTU&rdquo; in it if the feature name does not
+            already have it — the app name is added to the end automatically, so
+            do not type that in.
+          </p>
+        </div>
+      </AdminCard>
+
       <CollectionEditor
         table="web_features"
         singular="feature"
@@ -57,6 +88,39 @@ export default function AdminFeaturesPage() {
             type: 'textarea',
             rows: 4,
             help: 'Optional. Shown on the Features page under the short one.',
+          },
+          {
+            name: 'slug',
+            label: 'Web address',
+            type: 'text',
+            half: true,
+            lockOnEdit: true,
+            transform: 'slug',
+            placeholder: 'vtu-cgpa-calculator',
+            help: 'Optional. Filling this in creates the page. Letters, numbers and hyphens only.',
+          },
+          {
+            name: 'seo_title',
+            label: 'Page headline',
+            type: 'text',
+            half: true,
+            maxLength: 120,
+            placeholder: 'VTU CGPA & SGPA Calculator',
+            help: 'Optional. What Google shows as the title. The app name is added automatically.',
+          },
+          {
+            name: 'page_intro',
+            label: 'Page content',
+            type: 'textarea',
+            rows: 14,
+            help: 'Optional. The body of the feature page. Plain HTML — start headings at <h2>, since the feature name is already the <h1>.',
+          },
+          {
+            name: 'seo_description',
+            label: 'Google description',
+            type: 'textarea',
+            rows: 3,
+            help: 'Optional. The grey sentence under the title in search results. Around 155 characters.',
           },
           {
             name: 'icon',

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { DynamicIcon } from '@/components/dynamic-icon'
 
 /** Tiles drawn in the placeholder screen, mirroring the app's home grid. */
@@ -36,11 +37,19 @@ export function PhoneMockup({
         <div className="relative aspect-[9/19.5] overflow-hidden rounded-[1.9rem] bg-muted">
           <div className="absolute left-1/2 top-2 z-10 h-1.5 w-14 -translate-x-1/2 rounded-full bg-foreground/20" />
           {imageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            /*
+             * The hero screenshot is the largest thing painted above the fold,
+             * so it is the page's LCP element: `priority` drops the lazy-load
+             * and emits a preload, and `sizes` stops it fetching a full-width
+             * screenshot for a 284px frame.
+             */
+            <Image
               src={imageUrl}
               alt={`${appName} app screen`}
-              className="h-full w-full object-cover"
+              fill
+              priority
+              sizes="(max-width: 640px) 252px, 284px"
+              className="object-cover"
             />
           ) : (
             <div className="flex h-full flex-col gap-3 px-3.5 pb-4 pt-8">

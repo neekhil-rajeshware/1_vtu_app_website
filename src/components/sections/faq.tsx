@@ -1,4 +1,5 @@
 import { ChevronDown } from 'lucide-react'
+import { JsonLd } from '@/components/json-ld'
 import { Container, Section, SectionHeading } from '@/components/ui'
 import { groupFaqs, type Faq, type HomeSection } from '@/lib/content'
 
@@ -12,11 +13,17 @@ export function FaqSection({
   faqs,
   grouped = false,
   showHeading = true,
+  heading,
 }: {
   section?: HomeSection
   faqs: Faq[]
   grouped?: boolean
   showHeading?: boolean
+  /**
+   * A bare `<h2>` for the callers that pass `showHeading={false}` but still
+   * want the block named — the per-feature pages, which draw their own header.
+   */
+  heading?: string
 }) {
   if (faqs.length === 0) return null
 
@@ -43,9 +50,21 @@ export function FaqSection({
             title={section?.heading || 'Questions students ask'}
             subtitle={section?.subheading ?? undefined}
           />
+        ) : heading ? (
+          <h2 className="mx-auto max-w-3xl text-2xl font-bold tracking-tight">
+            {heading}
+          </h2>
         ) : null}
 
-        <div className={showHeading ? 'mx-auto mt-12 max-w-3xl space-y-10' : 'mx-auto max-w-3xl space-y-10'}>
+        <div
+          className={
+            showHeading
+              ? 'mx-auto mt-12 max-w-3xl space-y-10'
+              : heading
+                ? 'mx-auto mt-6 max-w-3xl space-y-10'
+                : 'mx-auto max-w-3xl space-y-10'
+          }
+        >
           {groups.map((group) => (
             <div key={group.name || 'all'}>
               {group.name ? (
@@ -75,10 +94,7 @@ export function FaqSection({
         </div>
       </Container>
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
     </Section>
   )
 }

@@ -2,14 +2,17 @@ import type { Metadata } from 'next'
 import { Download, QrCode, ShieldCheck, Smartphone, Sparkles } from 'lucide-react'
 import { ButtonLink, Card, Container, EmptyState, PageHeader, Section, SectionHeading } from '@/components/ui'
 import { getVersions } from '@/lib/content'
+import { pageMetadata } from '@/lib/seo'
 import { appName, getSettings } from '@/lib/settings'
 import { formatDate } from '@/lib/utils'
 
-export const metadata: Metadata = {
-  title: 'Download',
-  description:
-    'Get the app free on Android. Requirements, download size and the full version history.',
-  alternates: { canonical: '/download' },
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'Download',
+    description:
+      'Download the app free on Android. Requirements, download size, and the full version history of every release.',
+    path: '/download',
+  })
 }
 
 export default async function DownloadPage() {

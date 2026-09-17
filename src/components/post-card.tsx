@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Clock } from 'lucide-react'
 import type { Post } from '@/lib/content'
@@ -10,13 +11,19 @@ export function PostCard({ post }: { post: Post }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
       {post.cover_image_url ? (
-        <Link href={`/blog/${post.slug}`} className="block overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+        <Link
+          href={`/blog/${post.slug}`}
+          className="relative block aspect-[16/9] overflow-hidden"
+        >
+          {/* `alt=""` on purpose: the headline right below already names the
+              post, so describing the cover again only makes a screen reader
+              say it twice. */}
+          <Image
             src={post.cover_image_url}
             alt=""
-            loading="lazy"
-            className="aspect-[16/9] w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            fill
+            sizes="(max-width: 640px) 92vw, (max-width: 1024px) 46vw, 31vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         </Link>
       ) : (

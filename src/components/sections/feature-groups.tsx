@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { DynamicIcon } from '@/components/dynamic-icon'
 import { Container, EmptyState, Section, SectionHeading } from '@/components/ui'
 import { groupFeatures, type Feature, type HomeSection } from '@/lib/content'
@@ -20,6 +21,15 @@ export function FeatureGroups({
   detailed?: boolean
 }) {
   const groups = groupFeatures(features)
+
+  /**
+   * Heading levels depend on whether this instance renders its own section
+   * heading. `SectionHeading` draws an `<h2>`, so group names sit at `<h3>`
+   * underneath it — but on `/features` there is no section heading, and a fixed
+   * `<h3>` there left the page jumping straight from `<h1>` to `<h3>`.
+   */
+  const GroupHeading = showHeading ? 'h3' : 'h2'
+  const ItemHeading = showHeading ? 'h4' : 'h3'
 
   return (
     <Section>
@@ -44,7 +54,9 @@ export function FeatureGroups({
           {groups.map((group) => (
             <div key={group.name}>
               <div className="flex items-center gap-3">
-                <h3 className="text-lg font-bold tracking-tight">{group.name}</h3>
+                <GroupHeading className="text-lg font-bold tracking-tight">
+                  {group.name}
+                </GroupHeading>
                 <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   {group.items.length}
                 </span>
@@ -63,13 +75,33 @@ export function FeatureGroups({
                         <DynamicIcon name={feature.icon} className="h-[1.15rem] w-[1.15rem]" />
                       </span>
                       <div className="min-w-0">
-                        <h4 className="text-[0.95rem] font-bold leading-snug">
-                          {feature.title}
-                        </h4>
+                        <ItemHeading className="text-[0.95rem] font-bold leading-snug">
+                          {/* A feature with its own page links to it. The
+                              anchor stays on the ones that do not, so the
+                              "Most used" pills above still land somewhere. */}
+                          {feature.slug ? (
+                            <Link
+                              href={`/features/${feature.slug}`}
+                              className="transition-colors hover:text-primary dark:hover:text-accent-foreground"
+                            >
+                              {feature.title}
+                            </Link>
+                          ) : (
+                            feature.title
+                          )}
+                        </ItemHeading>
                         {feature.short_description ? (
                           <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
                             {feature.short_description}
                           </p>
+                        ) : null}
+                        {feature.slug ? (
+                          <Link
+                            href={`/features/${feature.slug}`}
+                            className="mt-2 inline-block text-sm font-semibold text-primary dark:text-accent-foreground"
+                          >
+                            More about {feature.title}
+                          </Link>
                         ) : null}
                         {detailed && feature.long_description ? (
                           <p className="mt-2.5 border-t border-border pt-2.5 text-sm leading-relaxed text-muted-foreground">

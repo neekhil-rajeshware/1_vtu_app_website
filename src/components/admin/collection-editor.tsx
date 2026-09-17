@@ -62,8 +62,11 @@ export type CollectionField = {
    *
    * - `code` — upper-cases and replaces anything but A-Z, 0-9 and `_` with an
    *   underscore. For a column another table refers to by value.
+   * - `slug` — lower-cases and joins words with hyphens, so a typed "VTU CGPA
+   *   Calculator" becomes the `vtu-cgpa-calculator` the URL needs. Matches the
+   *   CHECK on `web_features.slug`, which is what would otherwise reject it.
    */
-  transform?: 'code'
+  transform?: 'code' | 'slug'
   /**
    * Shown but not editable once the record exists. For columns other rows point
    * at by value: changing one after the fact silently strands them.
@@ -79,6 +82,11 @@ function applyTransform(
   switch (transform) {
     case 'code':
       return value.toUpperCase().replace(/[^A-Z0-9_]+/g, '_')
+    case 'slug':
+      return value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
     default:
       return value
   }

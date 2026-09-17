@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { AccountAndData } from '@/components/sections/account-and-data'
 import { BlogTeaser } from '@/components/sections/blog-teaser'
 import { ClosingCta } from '@/components/sections/closing-cta'
@@ -10,6 +11,7 @@ import { ScreenshotShowcase } from '@/components/sections/screenshot-showcase'
 import { StatsStrip } from '@/components/sections/stats-strip'
 import { Testimonials } from '@/components/sections/testimonials'
 import { WhyUs } from '@/components/sections/why-us'
+import { JsonLd } from '@/components/json-ld'
 import {
   getFaqs,
   getFeatures,
@@ -19,9 +21,24 @@ import {
   getScreenshots,
   getStats,
   getTestimonials,
+  getVersions,
 } from '@/lib/content'
-import { appName, getSettings } from '@/lib/settings'
-import { siteUrl } from '@/lib/utils'
+import { pageMetadata } from '@/lib/seo'
+import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
+
+/**
+ * No `title`, deliberately: the root layout's `title.default` is the site
+ * title, and passing one here would run it through the `%s — App` template and
+ * produce "One VTU — One VTU".
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSettings()
+  return pageMetadata({
+    description:
+      settings.seo.default_description || settings.site.short_description,
+    path: '/',
+  })
+}
 
 export default async function HomePage() {
   const [
@@ -34,6 +51,7 @@ export default async function HomePage() {
     testimonials,
     faqs,
     posts,
+    versions,
   ] = await Promise.all([
     getSettings(),
     getHomeSections(),
@@ -44,12 +62,17 @@ export default async function HomePage() {
     getTestimonials(),
     getFaqs(),
     getPublishedPosts(3),
+    getVersions(),
   ])
 
   // Sections can be hidden individually from Admin -> Home Page.
   const visible = (key: string) => sections[key]?.is_visible !== false
 
   const name = appName(settings)
+
+  // `getVersions` orders by sort_order ascending, which the admin page defines
+  // as newest first, so the head of the list is the current release.
+  const latestVersion = versions[0]?.version
 
   const appJsonLd = {
     '@context': 'https://schema.org',
@@ -58,11 +81,23 @@ export default async function HomePage() {
     description: settings.seo.default_description || settings.site.short_description,
     applicationCategory: 'EducationalApplication',
     operatingSystem: 'Android',
-    url: siteUrl(),
+    // `publicWebsiteUrl` (the domain in Site settings) rather than `siteUrl()`
+    // (an env var): the owner can change the domain without a deploy, and two
+    // different notions of "our own address" on one page is how canonicals
+    // drift apart.
+    url: publicWebsiteUrl(settings),
+    inLanguage: 'en-IN',
+    ...(settings.download.size ? { fileSize: settings.download.size } : {}),
+    ...(latestVersion ? { softwareVersion: latestVersion } : {}),
     ...(settings.download.play_store_url
       ? { installUrl: settings.download.play_store_url }
       : {}),
-    offers: { '@type': 'Offer', price: '0', priceCurrency: 'INR' },
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'INR',
+      availability: 'https://schema.org/InStock',
+    },
   }
 
   return (
@@ -101,10 +136,7 @@ export default async function HomePage() {
         <ClosingCta section={sections.cta} settings={settings} />
       ) : null}
 
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(appJsonLd) }}
-      />
+      <JsonLd data={appJsonLd} />
     </>
   )
 }

@@ -10,6 +10,17 @@ export type Feature = {
   title: string
   short_description: string | null
   long_description: string | null
+  /**
+   * Set only on the handful of features that get their own page at
+   * `/features/<slug>`. A null slug means "listed on /features only", which is
+   * how every feature started — so clearing the field retires a page without
+   * touching anything else.
+   */
+  slug: string | null
+  /** The long-form body of that page, as HTML. */
+  page_intro: string | null
+  seo_title: string | null
+  seo_description: string | null
   icon: string | null
   image_url: string | null
   is_highlight: boolean
@@ -48,6 +59,8 @@ export type Faq = {
   question: string
   answer: string
   category: string
+  /** Set when the FAQ belongs to one feature's page rather than the whole site. */
+  feature_slug: string | null
   is_active: boolean
   sort_order: number
 }
@@ -134,6 +147,9 @@ const FEATURE_TEXT: Array<keyof Feature> = [
   'title',
   'short_description',
   'long_description',
+  'page_intro',
+  'seo_title',
+  'seo_description',
 ]
 
 export async function getFeatures(): Promise<Feature[]> {
@@ -144,6 +160,38 @@ export async function getFeatures(): Promise<Feature[]> {
     .eq('is_active', true)
     .order('sort_order')
     .order('title')
+  return withTokens((data as Feature[]) ?? [], FEATURE_TEXT)
+}
+
+/**
+ * One feature by its URL slug, for `/features/<slug>`.
+ *
+ * Returns null both when the slug is unknown and when the feature has been
+ * switched off in the dashboard, so a hidden feature 404s rather than quietly
+ * staying reachable.
+ */
+export async function getFeatureBySlug(slug: string): Promise<Feature | null> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('web_features')
+    .select('*')
+    .eq('slug', slug)
+    .eq('is_active', true)
+    .maybeSingle()
+  if (!data) return null
+  const [feature] = await withTokens([data as Feature], FEATURE_TEXT)
+  return feature
+}
+
+/** Every feature that has its own page, for the sitemap. */
+export async function getFeaturesWithPages(): Promise<Feature[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('web_features')
+    .select('*')
+    .eq('is_active', true)
+    .not('slug', 'is', null)
+    .order('sort_order')
   return withTokens((data as Feature[]) ?? [], FEATURE_TEXT)
 }
 
@@ -181,12 +229,32 @@ export async function getScreenshots(): Promise<Screenshot[]> {
   return bundledScreenshots.filter((shot) => !off.has(shot.id))
 }
 
+/**
+ * The site-wide FAQ list, for the home page and `/features`.
+ *
+ * Feature-scoped rows are filtered out here rather than at each call site: they
+ * belong to one landing page, and rendering them globally would put a question
+ * like "which VTU scheme does the CGPA calculator use" on the home page.
+ */
 export async function getFaqs(): Promise<Faq[]> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('web_faqs')
     .select('*')
     .eq('is_active', true)
+    .is('feature_slug', null)
+    .order('sort_order')
+  return withTokens((data as Faq[]) ?? [], ['question', 'answer'])
+}
+
+/** The FAQs belonging to one feature's landing page. */
+export async function getFeatureFaqs(slug: string): Promise<Faq[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('web_faqs')
+    .select('*')
+    .eq('is_active', true)
+    .eq('feature_slug', slug)
     .order('sort_order')
   return withTokens((data as Faq[]) ?? [], ['question', 'answer'])
 }

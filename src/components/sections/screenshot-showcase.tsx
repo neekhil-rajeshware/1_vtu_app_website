@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { buttonClass, Container, Section, SectionHeading } from '@/components/ui'
@@ -30,13 +31,23 @@ export function ScreenshotShowcase({
         {screenshots.slice(0, 10).map((shot) => (
           <figure key={shot.id} className="w-[13.5rem] shrink-0 snap-center">
             <div className="overflow-hidden rounded-[1.6rem] border border-border bg-card p-1.5 shadow-lg">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={shot.image_url}
-                alt={shot.title}
-                loading="lazy"
-                className="aspect-[9/19.5] w-full rounded-[1.25rem] object-cover"
-              />
+              {/*
+                The captures are 1080px-wide PNGs displayed at 216px. Served
+                raw, the home page pulled roughly a megabyte of screenshot for
+                a strip of thumbnails; through next/image the browser gets a
+                WebP/AVIF at the size it actually paints. `fill` needs a
+                positioned parent, which is what the wrapper below is — the
+                aspect ratio reserves the space so nothing shifts on load.
+              */}
+              <div className="relative aspect-[9/19.5] w-full overflow-hidden rounded-[1.25rem]">
+                <Image
+                  src={shot.image_url}
+                  alt={shot.title}
+                  fill
+                  sizes="216px"
+                  className="object-cover"
+                />
+              </div>
             </div>
             <figcaption className="mt-3 px-1">
               <p className="text-sm font-semibold">{shot.title}</p>

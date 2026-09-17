@@ -273,6 +273,29 @@
   font-size: 0.875em;
   font-family: var(--font-mono-stack, ui-monospace, monospace);
 }
+/*
+ * A fenced code block. Without this the `code` rule above still applies to the
+ * inner element, so a block renders as one very long inline chip that runs off
+ * the side of a phone — `pre` needs to be the thing that scrolls, and the inner
+ * `code` needs to give up its own background and padding.
+ */
+.prose-brand pre {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background-color: var(--muted);
+  padding: 1rem 1.125rem;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  font-family: var(--font-mono-stack, ui-monospace, monospace);
+}
+.prose-brand pre code {
+  background-color: transparent;
+  border-radius: 0;
+  padding: 0;
+  font-size: inherit;
+}
 .prose-brand hr {
   margin: 2rem 0;
   border-top: 1px solid var(--border);

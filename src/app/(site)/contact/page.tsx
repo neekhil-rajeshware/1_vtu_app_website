@@ -6,12 +6,16 @@ import { FaqSection } from '@/components/sections/faq'
 import { SocialIcon, SOCIAL_LABELS, type SocialNetwork } from '@/components/social-icon'
 import { Card, Container, PageHeader, Section } from '@/components/ui'
 import { getFaqs } from '@/lib/content'
+import { pageMetadata } from '@/lib/seo'
 import { getSettings } from '@/lib/settings'
 
-export const metadata: Metadata = {
-  title: 'Contact',
-  description: 'Ask a question, report a mistake, or request an account deletion.',
-  alternates: { canonical: '/contact' },
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'Contact',
+    description:
+      'Ask a question, report a mistake, or request an account deletion. We read everything and usually reply within a couple of days.',
+    path: '/contact',
+  })
 }
 
 const SOCIAL_ORDER: SocialNetwork[] = [

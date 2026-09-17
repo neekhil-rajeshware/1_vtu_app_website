@@ -2,13 +2,18 @@ import type { Metadata } from 'next'
 import { Heart, Lock, Sparkles } from 'lucide-react'
 import { RazorpayButton } from '@/components/razorpay-button'
 import { Card, Container, PageHeader, Section } from '@/components/ui'
+import { pageMetadata } from '@/lib/seo'
 import { getSettings } from '@/lib/settings'
 
-export const metadata: Metadata = {
-  title: 'Support the Developer',
-  description:
-    'One VTU is free for every VTU student. If it helps you, you can optionally contribute any amount.',
-  alternates: { canonical: '/support' },
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    // The app name is deliberately left out: it is editable in the dashboard, and
+    // a description typed out here would be the one copy a rename could not fix.
+    title: 'Support the Developer',
+    description:
+      'The app is free for every VTU student. If it helps you, you can optionally contribute any amount — it unlocks nothing and removes no ads.',
+    path: '/support',
+  })
 }
 
 /**

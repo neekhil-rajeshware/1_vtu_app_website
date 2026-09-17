@@ -2,12 +2,15 @@ import type { Metadata } from 'next'
 import { PostCard } from '@/components/post-card'
 import { Container, EmptyState, PageHeader, Section } from '@/components/ui'
 import { getPublishedPosts } from '@/lib/content'
+import { pageMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: 'Blog',
-  description:
-    'Exam tips, VTU updates and notes on what is new in the app.',
-  alternates: { canonical: '/blog' },
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'Blog',
+    description:
+      'VTU exam updates, study and revision advice, and notes on what changed in the latest release of the app.',
+    path: '/blog',
+  })
 }
 
 export default async function BlogPage() {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Screenshot } from '@/lib/content'
@@ -84,13 +85,21 @@ export function ScreenshotGallery({ screenshots }: { screenshots: Screenshot[] }
               className="block w-full overflow-hidden rounded-[1.4rem] border border-border bg-card p-1.5 shadow-sm transition-transform hover:-translate-y-0.5 hover:shadow-md"
               aria-label={`Open ${shot.title} full size`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={shot.image_url}
-                alt={shot.title}
-                loading="lazy"
-                className="aspect-[9/19.5] w-full rounded-[1.1rem] object-cover"
-              />
+              {/*
+                All 49 captures are 1080px PNGs. Serving them raw meant the
+                gallery pulled several megabytes of full-resolution screenshots
+                to paint thumbnails a fifth of that width; next/image picks a
+                size from `sizes` instead and encodes it as WebP or AVIF.
+              */}
+              <div className="relative aspect-[9/19.5] w-full overflow-hidden rounded-[1.1rem]">
+                <Image
+                  src={shot.image_url}
+                  alt={shot.title}
+                  fill
+                  sizes="(max-width: 640px) 46vw, (max-width: 1024px) 31vw, 23vw"
+                  className="object-cover"
+                />
+              </div>
             </button>
             <figcaption className="mt-2.5 px-1">
               <p className="text-sm font-semibold">{shot.title}</p>
@@ -151,12 +160,22 @@ export function ScreenshotGallery({ screenshots }: { screenshots: Screenshot[] }
           ) : null}
 
           <figure onClick={(event) => event.stopPropagation()} className="max-h-full">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={active.image_url}
-              alt={active.title}
-              className="mx-auto max-h-[78vh] rounded-2xl object-contain shadow-2xl"
-            />
+            {/*
+              Sized from the viewport rather than the source: the lightbox never
+              paints wider than 92vw or taller than 78vh, so asking for a phone
+              screenshot at full resolution here was the largest single download
+              on the site. `object-contain` keeps admin-uploaded screenshots of
+              any aspect ratio inside the frame.
+            */}
+            <div className="relative aspect-[9/19.5] h-[78vh] max-w-[92vw] overflow-hidden rounded-2xl shadow-2xl">
+              <Image
+                src={active.image_url}
+                alt={active.title}
+                fill
+                sizes="(max-width: 640px) 92vw, 420px"
+                className="object-contain"
+              />
+            </div>
             <figcaption className="mt-3 text-center text-sm text-white/85">
               <span className="font-semibold text-white">{active.title}</span>
               {active.caption ? <span> — {active.caption}</span> : null}

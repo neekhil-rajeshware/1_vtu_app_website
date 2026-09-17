@@ -5,12 +5,16 @@ import { ClosingCta } from '@/components/sections/closing-cta'
 import { StatsStrip } from '@/components/sections/stats-strip'
 import { buttonClass, Card, Container, PageHeader, Section } from '@/components/ui'
 import { getStats } from '@/lib/content'
+import { pageMetadata } from '@/lib/seo'
 import { getSettings } from '@/lib/settings'
 
-export const metadata: Metadata = {
-  title: 'About',
-  description: 'Why we built the app, who it is for, and how to reach us.',
-  alternates: { canonical: '/about' },
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'About',
+    description:
+      'Why we built the app, who it is for, and what it does with your data. An independent study companion for VTU engineering students.',
+    path: '/about',
+  })
 }
 
 const VALUES = [

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { Container, PageHeader } from '@/components/ui'
 import { getLegalPage } from '@/lib/content'
+import { pageMetadata } from '@/lib/seo'
 import { appName, fillPlaceholders, getSettings } from '@/lib/settings'
 import { formatDate } from '@/lib/utils'
 
@@ -11,13 +12,15 @@ import { formatDate } from '@/lib/utils'
  */
 export async function legalMetadata(slug: string): Promise<Metadata> {
   const [page, settings] = await Promise.all([getLegalPage(slug), getSettings()])
-  if (!page) return { title: 'Not found' }
+  if (!page) {
+    return { title: 'Not found', robots: { index: false, follow: true } }
+  }
   const title = fillPlaceholders(page.title, settings)
-  return {
+  return pageMetadata({
     title,
     description: `${title} for the ${appName(settings)} app.`,
-    alternates: { canonical: `/${slug}` },
-  }
+    path: `/${slug}`,
+  })
 }
 
 /**

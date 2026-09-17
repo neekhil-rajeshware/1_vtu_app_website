@@ -1,43 +1,63 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, Clock } from 'lucide-react'
+import { JsonLd } from '@/components/json-ld'
 import { PostCard } from '@/components/post-card'
 import { Container, Section, SectionHeading } from '@/components/ui'
 import { getPostBySlug, getPublishedPosts } from '@/lib/content'
-import { formatDate, readingTime, siteUrl } from '@/lib/utils'
+import { absoluteUrl, breadcrumbJsonLd } from '@/lib/seo'
+import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
+import { formatDate, readingTime } from '@/lib/utils'
 
 type Params = { params: Promise<{ slug: string }> }
 
+/**
+ * Built here rather than through `pageMetadata` because a post carries fields a
+ * static page does not: `article` og:type, its own published and modified
+ * times, and a title that comes from the database rather than the code.
+ */
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params
   const post = await getPostBySlug(slug)
 
   if (!post) {
-    return { title: 'Post not found' }
+    return { title: 'Post not found', robots: { index: false, follow: true } }
   }
 
+  const settings = await getSettings()
+  const base = publicWebsiteUrl(settings)
+  const name = appName(settings)
   const title = post.meta_title || post.title
-  const description = post.meta_description || post.excerpt || undefined
+  const description =
+    post.meta_description || post.excerpt || settings.seo.default_description
+  const shareImage = post.cover_image_url || `${base}/og`
+
+  // Same reason as `pageMetadata`: `openGraph.title` does not get the root
+  // layout's `%s` template applied, so an unbranded title here would leave a
+  // shared post headed just "The CGPA calculator that refuses to guess".
+  const socialTitle = `${title} — ${name}`
 
   return {
     title,
     description,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
-      title,
-      description,
       type: 'article',
-      url: `${siteUrl()}/blog/${post.slug}`,
+      siteName: name,
+      url: absoluteUrl(base, `/blog/${post.slug}`),
+      title: socialTitle,
+      description,
       publishedTime: post.published_at ?? post.created_at,
       modifiedTime: post.updated_at,
-      images: [post.cover_image_url || `${siteUrl()}/og`],
+      images: [{ url: shareImage, width: 1200, height: 630 }],
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: socialTitle,
       description,
-      images: [post.cover_image_url || `${siteUrl()}/og`],
+      images: [shareImage],
     },
   }
 }
@@ -49,8 +69,10 @@ export default async function PostPage({ params }: Params) {
   if (!post) notFound()
 
   const published = post.published_at ?? post.created_at
-  const all = await getPublishedPosts()
+  const [all, settings] = await Promise.all([getPublishedPosts(), getSettings()])
   const related = all.filter((item) => item.slug !== post.slug).slice(0, 3)
+  const base = publicWebsiteUrl(settings)
+  const url = absoluteUrl(base, `/blog/${post.slug}`)
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -60,18 +82,26 @@ export default async function PostPage({ params }: Params) {
     image: post.cover_image_url || undefined,
     datePublished: published,
     dateModified: post.updated_at,
-    mainEntityOfPage: {
-      '@type': 'WebPage',
-      '@id': `${siteUrl()}/blog/${post.slug}`,
-    },
+    inLanguage: 'en-IN',
+    // No `author` name: posts are written by the app's publisher, and the
+    // developer name in settings ships blank by design, so naming an author
+    // would mean inventing one.
+    publisher: { '@type': 'Organization', name: appName(settings), url: base },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
   }
+
+  // Genuinely nested, so a trail earns its place here — Google renders it in the
+  // result snippet in place of the bare URL.
+  const crumbs = breadcrumbJsonLd(base, [
+    { name: 'Home', path: '/' },
+    { name: 'Blog', path: '/blog' },
+    { name: post.title, path: `/blog/${post.slug}` },
+  ])
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={crumbs} />
 
       <article>
         <div className="border-b border-border bg-muted/40">
@@ -123,12 +153,16 @@ export default async function PostPage({ params }: Params) {
           <Container>
             <div className="mx-auto max-w-3xl">
               {post.cover_image_url ? (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={post.cover_image_url}
-                  alt=""
-                  className="mb-8 aspect-[16/9] w-full rounded-2xl border border-border object-cover"
-                />
+                <div className="relative mb-8 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-border">
+                  <Image
+                    src={post.cover_image_url}
+                    alt=""
+                    fill
+                    priority
+                    sizes="(max-width: 1024px) 92vw, 768px"
+                    className="object-cover"
+                  />
+                </div>
               ) : null}
 
               <div

@@ -3,12 +3,16 @@ import { ScreenshotGallery } from '@/components/screenshot-gallery'
 import { ClosingCta } from '@/components/sections/closing-cta'
 import { Container, EmptyState, PageHeader, Section } from '@/components/ui'
 import { getScreenshots } from '@/lib/content'
+import { pageMetadata } from '@/lib/seo'
 import { getSettings } from '@/lib/settings'
 
-export const metadata: Metadata = {
-  title: 'Screenshots',
-  description: 'See what the app looks like before you install it.',
-  alternates: { canonical: '/screenshots' },
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'Screenshots',
+    description:
+      'Every screen in the VTU study app, from the syllabus tracker and attendance to AI Professor, flashcards and the CGPA calculator.',
+    path: '/screenshots',
+  })
 }
 
 export default async function ScreenshotsPage() {

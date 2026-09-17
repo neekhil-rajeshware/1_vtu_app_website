@@ -3,13 +3,16 @@ import Link from 'next/link'
 import { AlertTriangle, Clock, Mail, ShieldCheck } from 'lucide-react'
 import { ReportForm } from '@/components/report-form'
 import { Card, Container, PageHeader, Section } from '@/components/ui'
+import { pageMetadata } from '@/lib/seo'
 import { getSettings } from '@/lib/settings'
 
-export const metadata: Metadata = {
-  title: 'Report content',
-  description:
-    'Report an unsafe, misleading or illegal Student Marketplace listing. Reports can be sent anonymously.',
-  alternates: { canonical: '/report' },
+export async function generateMetadata(): Promise<Metadata> {
+  return pageMetadata({
+    title: 'Report content',
+    description:
+      'Report an unsafe, misleading or illegal Student Marketplace listing. Reports can be sent anonymously and are reviewed within 48 hours.',
+    path: '/report',
+  })
 }
 
 const STEPS = [
