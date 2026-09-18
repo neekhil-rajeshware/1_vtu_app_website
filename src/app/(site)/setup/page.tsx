@@ -16,21 +16,16 @@ import { pageMetadata } from '@/lib/seo'
 import { appName, getSettings } from '@/lib/settings'
 
 /**
- * The closed-test install link. Closed testing on Play is opt-in per account:
- * this URL only works after the tester's own Google account has been added to
- * the list, which is why the copy below asks for the Gmail address rather than
- * telling the reader to try again.
+ * The AI Studio page where a free Gemini key is issued. Hard-coded rather than
+ * a setting: it is Google's URL, not ours to move.
  */
-const PLAY_TESTING_URL = 'https://play.google.com/apps/testing/com.oneedtech.onevtu'
-
-/** The AI Studio page where a free Gemini key is issued. */
 const GEMINI_KEYS_URL = 'https://aistudio.google.com/api-keys'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
     title: 'Setup guide',
     description:
-      'Install the One VTU testing build and set it up step by step: account, profile, reminders, subjects, your free Gemini API key, and the daily study loop.',
+      'Install One VTU and set it up step by step: account, profile, reminders, subjects, your free Gemini API key, and the daily study loop.',
     path: '/setup',
   })
 }
@@ -79,13 +74,16 @@ function Tap({ children }: { children: ReactNode }) {
 export default async function SetupPage() {
   const settings = await getSettings()
   const name = appName(settings)
+  // The same setting the download page's button reads, so the two cannot drift
+  // apart — one dashboard field changes both, or neither.
+  const playStoreUrl = settings.download.play_store_url
 
   return (
     <>
       <PageHeader
         eyebrow="Setup guide"
         title={`Set up ${name}, step by step`}
-        subtitle="You are testing a closed build, so the first step happens in Google Play rather than in the app. From there it is about ten minutes: an account, your profile, your subjects, a free AI key, and then the daily loop."
+        subtitle="From installing it off the Play Store to your first Daily Quiz, in about ten minutes: an account, your profile, your subjects, a free AI key, and then the daily loop."
       />
 
       <Section>
@@ -93,8 +91,8 @@ export default async function SetupPage() {
           <div>
             <SectionHeading
               eyebrow="Before you begin"
-              title="Install the testing build"
-              subtitle="The app is in closed testing, so it does not show up in a Play Store search yet. This link is how you get in."
+              title="Install the app"
+              subtitle={`${name} is free on Google Play, with no subscription and no ads to sit through before you can study.`}
               align="left"
             />
 
@@ -104,17 +102,16 @@ export default async function SetupPage() {
                   <Smartphone className="h-[1.1rem] w-[1.1rem]" />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="font-semibold">Open the testing link on your phone</h3>
+                  <h3 className="font-semibold">Install it from the Play Store</h3>
                   <div className="mt-2 space-y-2 text-sm leading-relaxed text-muted-foreground">
                     <p>
-                      Sign in with the <strong>same Google account</strong> whose
-                      Gmail address you sent us. A closed test is opt-in per
-                      account, so any other account sees &ldquo;app not
-                      available&rdquo;.
+                      Open the <strong>Google Play Store</strong> on your phone,
+                      search for <strong>{name}</strong>, and tap{' '}
+                      <Tap>Install</Tap>.
                     </p>
                     <p>
-                      Tap <Tap>Become a tester</Tap>, then{' '}
-                      <Tap>Download it on Google Play</Tap> to install {name}.
+                      Nothing needs signing in to at this point — the account is
+                      created in the app, in the next step.
                     </p>
                   </div>
                 </div>
@@ -126,15 +123,26 @@ export default async function SetupPage() {
             <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary dark:text-accent-foreground">
               <Smartphone className="h-[1.2rem] w-[1.2rem]" />
             </span>
-            <p className="font-semibold">Open the testing link</p>
+            <p className="font-semibold">Get it on Google Play</p>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Do this on the phone, not on a laptop — the link hands you
-              straight to the Play Store app.
+              Free, and no subscription. A free account keeps your attendance,
+              marks and progress yours if you change phones.
             </p>
-            <ButtonLink href={PLAY_TESTING_URL} variant="primary" size="md" className="w-full">
-              Become a tester
+            <ButtonLink
+              href={playStoreUrl || undefined}
+              variant="primary"
+              size="md"
+              className="w-full"
+              unavailableTitle="Launching on Google Play soon"
+            >
+              Open Google Play
             </ButtonLink>
-            <p className="break-all text-xs text-muted-foreground">{PLAY_TESTING_URL}</p>
+            {!playStoreUrl ? (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Search <strong>{name}</strong> in the Play Store app on your
+                phone.
+              </p>
+            ) : null}
           </Card>
         </Container>
       </Section>
@@ -427,12 +435,13 @@ export default async function SetupPage() {
             <Card>
               <h3 className="flex items-center gap-2 font-semibold">
                 <Smartphone className="h-[1.05rem] w-[1.05rem] text-primary dark:text-accent-foreground" />
-                Play says the app is not available
+                The Play Store does not show the app
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Your Google account is not on the tester list yet, or you are
-                signed in as a different account. Tell us the Gmail address you
-                want to test with and we will add it.
+                Search the full name, <strong>{name}</strong>, rather than a
+                shortened one. If it still does not appear, your phone&apos;s
+                Android version is below what the app needs — you can check that
+                on the <Link href="/download" className="font-medium text-primary hover:underline dark:text-accent-foreground">download page</Link>.
               </p>
             </Card>
 
@@ -477,8 +486,9 @@ export default async function SetupPage() {
             <div className="min-w-0 flex-1">
               <p className="font-semibold">Still stuck, or found a bug?</p>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Tell us what you tapped and what happened instead. During the
-                test that feedback is the most useful thing you can send.
+                Tell us what you tapped and what happened instead. We read every
+                message, and it is usually the fastest way to get something
+                fixed.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

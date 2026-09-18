@@ -121,7 +121,7 @@ export default async function DownloadPage() {
                 Set it up in ten minutes
               </h2>
               <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
-                Step by step from installing the testing build to your first
+                Step by step from installing it off the Play Store to your first
                 Daily Quiz: account, profile, reminders, subjects, and the free
                 AI key the smart features run on.
               </p>
