@@ -395,10 +395,22 @@ export default async function SetupPage() {
           <ol className="mt-8 space-y-4">
             <Step n={13} title="Update, then Attendance">
               <p>
-                On Home, tap <Tap>Update</Tap> to pull the day&apos;s timetable
-                and notes, then <Tap>Attendance</Tap> to mark the classes you
-                attended.
+                The Home screen carries a card that reads{' '}
+                <em>Update learning &amp; mark attendance daily.</em>, with two
+                buttons on it. One tap each, and together they are what keeps
+                everything else in the app accurate:
               </p>
+              <ul className="ml-5 list-disc space-y-2">
+                <li>
+                  <Tap>Update</Tap> —{' '}
+                  <strong>update completed topics in classes</strong>. As a
+                  period finishes, tick the topics that were covered in it.
+                </li>
+                <li>
+                  <Tap>Attendance</Tap> — <strong>mark attendance</strong>. Tick
+                  the classes you were present for.
+                </li>
+              </ul>
               <p>
                 Attendance is what the safe-bunk count and the exam-eligibility
                 warning are calculated from, so mark it the same day — catching
