@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { Download, QrCode, ShieldCheck, Smartphone, Sparkles } from 'lucide-react'
-import { ButtonLink, Card, Container, EmptyState, PageHeader, Section, SectionHeading } from '@/components/ui'
+import { ArrowRight, Download, QrCode, ShieldCheck, Smartphone, Sparkles } from 'lucide-react'
+import { Badge, ButtonLink, Card, Container, EmptyState, PageHeader, Section, SectionHeading } from '@/components/ui'
 import { getVersions } from '@/lib/content'
 import { pageMetadata } from '@/lib/seo'
 import { appName, getSettings } from '@/lib/settings'
@@ -104,6 +104,33 @@ export default async function DownloadPage() {
               </>
             )}
           </Card>
+        </Container>
+      </Section>
+
+      {/*
+        The setup guide sits between installing and the changelog on purpose:
+        the version history answers "what changed", and this answers the
+        question someone has the moment the install finishes — "now what?".
+      */}
+      <Section className="border-t border-border">
+        <Container>
+          <div className="flex flex-col gap-5 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <Badge>First time here?</Badge>
+              <h2 className="mt-3 text-xl font-bold tracking-tight">
+                Set it up in ten minutes
+              </h2>
+              <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">
+                Step by step from installing the testing build to your first
+                Daily Quiz: account, profile, reminders, subjects, and the free
+                AI key the smart features run on.
+              </p>
+            </div>
+            <ButtonLink href="/setup" variant="primary" size="lg" className="shrink-0">
+              Read the setup guide
+              <ArrowRight className="h-[1.15rem] w-[1.15rem]" />
+            </ButtonLink>
+          </div>
         </Container>
       </Section>
 

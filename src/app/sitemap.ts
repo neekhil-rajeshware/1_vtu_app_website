@@ -11,6 +11,7 @@ const STATIC_ROUTES: Array<{
   { path: '/features', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/screenshots', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/download', priority: 0.9, changeFrequency: 'weekly' },
+  { path: '/setup', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/about', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/support', priority: 0.5, changeFrequency: 'yearly' },
@@ -29,7 +30,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   /*
    * No `lastModified` on the static routes. These pages are rendered per request
    * and their content lives in the database, so there is no build-time date to
-   * report — and stamping every URL with `new Date()` claims all thirteen
+   * report — and stamping every URL with `new Date()` claims all fourteen
    * changed on every single crawl. Google discards a `lastmod` it learns to
    * distrust, which would also throw away the honest ones below.
    */

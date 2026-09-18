@@ -13,6 +13,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string
       { href: '/features', label: 'All features' },
       { href: '/screenshots', label: 'Screenshots' },
       { href: '/download', label: 'Download' },
+      { href: '/setup', label: 'Setup guide' },
       { href: '/blog', label: 'Blog' },
     ],
   },
