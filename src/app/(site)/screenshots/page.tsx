@@ -8,7 +8,8 @@ import { getSettings } from '@/lib/settings'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Screenshots',
+    // Same reason as /features: "Screenshots" is a nav label, not a search.
+    title: 'VTU Study App Screenshots',
     description:
       'Every screen in the VTU study app, from the syllabus tracker and attendance to AI Professor, flashcards and the CGPA calculator.',
     path: '/screenshots',

@@ -23,8 +23,8 @@ import {
   getTestimonials,
   getVersions,
 } from '@/lib/content'
-import { pageMetadata } from '@/lib/seo'
-import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
+import { mobileApplicationJsonLd, pageMetadata } from '@/lib/seo'
+import { appName, getSettings } from '@/lib/settings'
 
 /**
  * No `title`, deliberately: the root layout's `title.default` is the site
@@ -74,31 +74,8 @@ export default async function HomePage() {
   // as newest first, so the head of the list is the current release.
   const latestVersion = versions[0]?.version
 
-  const appJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'MobileApplication',
-    name,
-    description: settings.seo.default_description || settings.site.short_description,
-    applicationCategory: 'EducationalApplication',
-    operatingSystem: 'Android',
-    // `publicWebsiteUrl` (the domain in Site settings) rather than `siteUrl()`
-    // (an env var): the owner can change the domain without a deploy, and two
-    // different notions of "our own address" on one page is how canonicals
-    // drift apart.
-    url: publicWebsiteUrl(settings),
-    inLanguage: 'en-IN',
-    ...(settings.download.size ? { fileSize: settings.download.size } : {}),
-    ...(latestVersion ? { softwareVersion: latestVersion } : {}),
-    ...(settings.download.play_store_url
-      ? { installUrl: settings.download.play_store_url }
-      : {}),
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'INR',
-      availability: 'https://schema.org/InStock',
-    },
-  }
+  // Built in `lib/seo` because the download page emits the same entity.
+  const appJsonLd = mobileApplicationJsonLd(settings, latestVersion)
 
   return (
     <>

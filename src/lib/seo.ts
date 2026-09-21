@@ -105,13 +105,23 @@ export function breadcrumbJsonLd(base: string, crumbs: Crumb[]) {
  * Who publishes the app. Emitted site-wide from the root layout so every page
  * carries it.
  *
- * Deliberately thin: it names the organisation and points at the logo, and
- * nothing else. A `PostalAddress` or `telephone` here would have to come from
- * the `developer` settings row, which ships empty by design — and an
- * `Organization` with blank fields is worse than one without them.
+ * Deliberately thin: it names the organisation, points at the logo, and lists
+ * the profiles the footer already links to, and nothing else. A
+ * `PostalAddress` or `telephone` here would have to come from the `developer`
+ * settings row, which ships empty by design — and an `Organization` with blank
+ * fields is worse than one without them.
  */
 export function organizationJsonLd(settings: AllSettings, base: string) {
-  const { site } = settings
+  const { site, social } = settings
+
+  /*
+   * `sameAs` is how a search engine ties the YouTube, Instagram and other
+   * accounts the footer already links to this domain as ONE entity, instead of
+   * deciding for itself whether they are related. Every value here is already
+   * on the page, so this claims nothing new — it just says it in a form a
+   * crawler can read.
+   */
+  const sameAs = Object.values(social).filter(Boolean)
 
   return {
     '@context': 'https://schema.org',
@@ -120,6 +130,50 @@ export function organizationJsonLd(settings: AllSettings, base: string) {
     url: base,
     ...(site.logo_url ? { logo: site.logo_url } : {}),
     ...(site.short_description ? { description: site.short_description } : {}),
+    ...(sameAs.length > 0 ? { sameAs } : {}),
+  }
+}
+
+/**
+ * The app itself, as a schema entity.
+ *
+ * Lives here rather than inline on the home page because the download page
+ * needs the identical block — it is the install page, and a crawler that lands
+ * there should find the same app entity it would find on the home page. Two
+ * hand-written copies of one entity is how the version number comes to disagree
+ * with itself.
+ *
+ * Every optional field is spread conditionally: an `installUrl` of `''` is a
+ * broken link in a rich result, which is worse than an absent one.
+ */
+export function mobileApplicationJsonLd(
+  settings: AllSettings,
+  latestVersion?: string | null,
+) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'MobileApplication',
+    name: appName(settings),
+    description: settings.seo.default_description || settings.site.short_description,
+    applicationCategory: 'EducationalApplication',
+    operatingSystem: 'Android',
+    // `publicWebsiteUrl` (the domain in Site settings) rather than `siteUrl()`
+    // (an env var): the owner can change the domain without a deploy, and two
+    // different notions of "our own address" on one page is how canonicals
+    // drift apart.
+    url: publicWebsiteUrl(settings),
+    inLanguage: 'en-IN',
+    ...(settings.download.size ? { fileSize: settings.download.size } : {}),
+    ...(latestVersion ? { softwareVersion: latestVersion } : {}),
+    ...(settings.download.play_store_url
+      ? { installUrl: settings.download.play_store_url }
+      : {}),
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'INR',
+      availability: 'https://schema.org/InStock',
+    },
   }
 }
 

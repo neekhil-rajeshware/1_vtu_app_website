@@ -18,7 +18,9 @@ import { slugify } from '@/lib/utils'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Features',
+    // The nav label ("Features") is not what anyone searches. The query goes in
+    // the title and the `%s — App` template appends the brand after the dash.
+    title: 'VTU Study App Features',
     description:
       'Every VTU study tool in one app: syllabus and scheme, previous year question papers, AI Professor, quizzes, attendance tracker, CGPA calculator, formulas and unit converters.',
     path: '/features',
@@ -84,8 +86,13 @@ export default async function FeaturesPage() {
               it is the section's only heading, not a label above a larger one,
               so it read as metadata and the jump from the h1 was abrupt. It
               now matches the group headings FeatureGroups draws below it.
+
+              It also used to say "Most used", which was a claim the data does
+              not support: `is_highlight` is a hand-set flag, and it now marks
+              a feature that shipped the day before. "Featured" says what the
+              flag actually means, and stays true as the set changes.
             */}
-            <h2 className="text-lg font-bold tracking-tight">Most used</h2>
+            <h2 className="text-lg font-bold tracking-tight">Featured</h2>
             {/*
               `gap-x-2 gap-y-3`: a wrapped row of pills needs more air between
               rows than between neighbours, because the eye reads rows as a

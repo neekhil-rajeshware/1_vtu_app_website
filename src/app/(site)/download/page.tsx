@@ -1,16 +1,22 @@
 import type { Metadata } from 'next'
 import { ArrowRight, Download, QrCode, ShieldCheck, Smartphone, Sparkles } from 'lucide-react'
+import { JsonLd } from '@/components/json-ld'
 import { Badge, ButtonLink, Card, Container, EmptyState, PageHeader, Section, SectionHeading } from '@/components/ui'
 import { getVersions } from '@/lib/content'
-import { pageMetadata } from '@/lib/seo'
+import { mobileApplicationJsonLd, pageMetadata } from '@/lib/seo'
 import { appName, getSettings } from '@/lib/settings'
 import { formatDate } from '@/lib/utils'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Download',
+    // The title is the query, not the page's name in the nav. Nobody searches
+    // "download" on its own; "VTU app" is what a student types, and the root
+    // layout's `%s — App` template supplies the brand after the dash. The
+    // description answers that search directly rather than describing the
+    // page's own contents, which is what it used to do.
+    title: 'VTU App for Android',
     description:
-      'Download the app free on Android. Requirements, download size, and the full version history of every release.',
+      'Download the free VTU study app for Android — syllabus, previous year question papers, CGPA calculator, attendance tracker and AI quizzes in one place. No subscription.',
     path: '/download',
   })
 }
@@ -19,6 +25,11 @@ export default async function DownloadPage() {
   const [settings, versions] = await Promise.all([getSettings(), getVersions()])
   const { download } = settings
   const name = appName(settings)
+
+  // The same app entity the home page emits. A crawler that reaches the install
+  // page directly — which is what a "VTU app download" search does — should
+  // find the app described here rather than only on the home page.
+  const appJsonLd = mobileApplicationJsonLd(settings, versions[0]?.version)
 
   const facts = [
     { icon: Smartphone, label: 'Requires', value: download.min_android },
@@ -29,6 +40,8 @@ export default async function DownloadPage() {
 
   return (
     <>
+      <JsonLd data={appJsonLd} />
+
       <PageHeader
         eyebrow="Download"
         title={`Get ${name} on Android`}
