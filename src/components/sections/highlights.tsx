@@ -4,7 +4,14 @@ import { DynamicIcon } from '@/components/dynamic-icon'
 import { buttonClass, Container, Section, SectionHeading } from '@/components/ui'
 import type { Feature, HomeSection } from '@/lib/content'
 
-/** The six "hero" features, shown as large cards. */
+/**
+ * The features flagged `is_highlight` in the dashboard, as large cards on the
+ * home page.
+ *
+ * The count is whatever that flag says — it is not fixed here, and the grid is
+ * laid out for any number of them. (This comment used to name a number, and the
+ * number went stale twice.)
+ */
 export function Highlights({
   section,
   features,

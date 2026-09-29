@@ -300,6 +300,42 @@
   margin: 2rem 0;
   border-top: 1px solid var(--border);
 }
+/*
+ * Tables. Nothing styled these before, so a post that used one rendered with
+ * browser defaults — no padding, no rules, columns crushed together. A table is
+ * also the shape an answer engine lifts wholesale, so it is worth making the
+ * blog able to carry one. The wrapper is what scrolls: a four-column table
+ * cannot fit a phone, and letting the table itself scroll would break the
+ * surrounding text width.
+ */
+.prose-brand .table-scroll {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+.prose-brand table {
+  width: 100%;
+  min-width: 30rem;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.prose-brand th,
+.prose-brand td {
+  border-bottom: 1px solid var(--border);
+  padding: 0.625rem 0.875rem 0.625rem 0;
+  text-align: left;
+  vertical-align: top;
+}
+.prose-brand th {
+  font-weight: 650;
+  color: var(--foreground);
+}
+.prose-brand td {
+  color: var(--muted-foreground);
+}
+.prose-brand tbody tr:last-child td {
+  border-bottom: 0;
+}
 .prose-brand img {
   border-radius: 0.75rem;
   margin: 1.5rem 0;
@@ -308,6 +344,26 @@
   font-size: 1.75rem;
   font-weight: 750;
   margin-bottom: 1rem;
+}
+
+/* ---------------------------------------------------------------
+   Coverage heatmap ramp (/coverage). Brand blue, three steps plus an
+   empty state, so "how many subjects" reads as magnitude in one hue.
+   Validated as an ordinal ramp against --card in both themes: monotone
+   lightness, >=0.06 step gaps, single hue, and the step nearest the
+   surface clears 2:1 (light #7b98e4 at 2.82:1, dark #3a5aad at 2.71:1).
+   Re-run the dataviz validator before changing any of these.
+   --------------------------------------------------------------- */
+:root {
+  --cov-1: #7b98e4;
+  --cov-2: #3f63c9;
+  --cov-3: #003399;
+}
+
+.dark {
+  --cov-1: #3a5aad;
+  --cov-2: #4d7ce8;
+  --cov-3: #a8c1ff;
 }
 
 /* Hide scrollbars on horizontal chip rows while keeping them scrollable. */

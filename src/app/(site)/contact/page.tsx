@@ -27,8 +27,21 @@ const SOCIAL_ORDER: SocialNetwork[] = [
   'linkedin',
 ]
 
-export default async function ContactPage() {
-  const [settings, faqs] = await Promise.all([getSettings(), getFaqs()])
+export default async function ContactPage({
+  searchParams,
+}: {
+  /**
+   * Read on the server rather than with `useSearchParams` in the form: that hook
+   * forces the whole page behind a Suspense boundary for one optional prefill.
+   * `/coverage`'s "Request this" links pass `subject` and `message`.
+   */
+  searchParams: Promise<{ subject?: string; message?: string }>
+}) {
+  const [settings, faqs, params] = await Promise.all([
+    getSettings(),
+    getFaqs(),
+    searchParams,
+  ])
   const { contact, social } = settings
   const activeSocials = SOCIAL_ORDER.filter((key) => social[key])
   const supportFaqs = faqs.filter((faq) => faq.category === 'Support')
@@ -43,7 +56,10 @@ export default async function ContactPage() {
 
       <Section>
         <Container className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-          <ContactForm responseTime={contact.response_time} />
+          <ContactForm
+            responseTime={contact.response_time}
+            prefill={{ subject: params.subject, message: params.message }}
+          />
 
           <div className="space-y-4">
             {contact.support_email ? (

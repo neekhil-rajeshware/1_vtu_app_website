@@ -1,6 +1,7 @@
 import {
   Archive,
   ArrowLeftRight,
+  AudioLines,
   BarChart3,
   Bell,
   Bookmark,
@@ -55,6 +56,7 @@ import {
 const ICONS: Record<string, LucideIcon> = {
   Archive,
   ArrowLeftRight,
+  AudioLines,
   BarChart3,
   Bell,
   Bookmark,

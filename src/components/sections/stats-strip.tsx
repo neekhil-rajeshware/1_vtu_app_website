@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
 import { DynamicIcon } from '@/components/dynamic-icon'
 import { Container } from '@/components/ui'
 import type { Stat } from '@/lib/content'
@@ -24,6 +26,20 @@ export function StatsStrip({ stats }: { stats: Stat[] }) {
             </div>
           ))}
         </dl>
+
+        {/*
+          The strip is four numbers with no way to check them, which is the
+          shape a claim takes when nobody can. This points at the page where
+          every one of them is counted, and where the ones we do not have are
+          listed too — worth the line in both places the strip appears.
+        */}
+        <Link
+          href="/coverage"
+          className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline dark:text-accent-foreground"
+        >
+          See exactly what is in the app — and what is not
+          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        </Link>
       </Container>
     </section>
   )

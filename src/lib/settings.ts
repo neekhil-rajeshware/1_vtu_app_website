@@ -144,6 +144,42 @@ export type ScreensSettings = {
   hidden: string[]
 }
 
+/**
+ * One examination session, as `/vtu-result-dates` lists it.
+ *
+ * `result_date` is only ever a date VTU has actually announced. While a session
+ * is still awaited it stays empty and the page says "not announced yet" instead
+ * of guessing — students plan travel and revaluation around this, so an invented
+ * date is worse than no date.
+ */
+export type ResultSession = {
+  /** e.g. "Semester 1 — 2025 scheme". */
+  label: string
+  /** When the exams were held, e.g. "25 Sep — 8 Oct 2026". */
+  exam_window: string
+  /** Announced declaration date as `YYYY-MM-DD`, or `''` while still awaited. */
+  result_date: string
+}
+
+/**
+ * The `/vtu-result-dates` hub.
+ *
+ * Kept in settings rather than in the page file so the table can be corrected
+ * the day VTU announces, without a deploy. This is the one page on the site
+ * worth re-editing several times a year, and its entire value — to Google and
+ * to a student — comes from being visibly current.
+ *
+ * `portal_url` must stay the real VTU portal. This page explains where results
+ * live; it must never become a lookalike that asks for a USN.
+ */
+export type ResultsSettings = {
+  /** `YYYY-MM-DD` of the last time a human checked this page. Shown on it. */
+  updated_at: string
+  portal_url: string
+  intro: string
+  sessions: ResultSession[]
+}
+
 export type AllSettings = {
   site: SiteSettings
   hero: HeroSettings
@@ -158,6 +194,7 @@ export type AllSettings = {
   support: SupportSettings
   developer: DeveloperSettings
   screens: ScreensSettings
+  results: ResultsSettings
 }
 
 /**
@@ -217,6 +254,12 @@ export const FALLBACK_SETTINGS: AllSettings = {
     jurisdiction: '',
   },
   screens: { hidden: defaultHiddenScreens },
+  results: {
+    updated_at: '',
+    portal_url: 'https://results.vtu.ac.in/',
+    intro: '',
+    sessions: [],
+  },
 }
 
 /**

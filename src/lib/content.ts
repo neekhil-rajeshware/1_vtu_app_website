@@ -1,4 +1,5 @@
 import { bundledScreenshots } from '@/lib/app-screens'
+import { coverageMetrics } from '@/lib/coverage'
 import { fillPlaceholders, getRawSettings, getSetting } from '@/lib/settings'
 import { createClient } from '@/lib/supabase/server'
 
@@ -84,6 +85,12 @@ export type Stat = {
   icon: string
   is_active: boolean
   sort_order: number
+  /**
+   * A live counter key from `coverageMetrics()`, or null for a hand-typed
+   * number. Only the countable rows have one — "Study tools" and "Unit
+   * converters" live in app code and nothing in the database can check them.
+   */
+  metric: string | null
 }
 
 export type AppVersion = {
@@ -269,14 +276,28 @@ export async function getTestimonials(): Promise<Testimonial[]> {
   return withTokens((data as Testimonial[]) ?? [], ['quote'])
 }
 
+/**
+ * The numbers strip under the hero, and the same strip on `/about`.
+ *
+ * A row with a `metric` takes its value from the live tables rather than from
+ * its typed `value` — the failures this prevents were real: the strip
+ * advertised 338 formulas against a table of 6,255, and there was nothing to
+ * catch it because nothing compared the two. A metric the helper does not
+ * return (offline, or a renamed key) falls back to the typed value rather than
+ * rendering an empty tile.
+ */
 export async function getStats(): Promise<Stat[]> {
   const supabase = await createClient()
-  const { data } = await supabase
-    .from('web_stats')
-    .select('*')
-    .eq('is_active', true)
-    .order('sort_order')
-  return withTokens((data as Stat[]) ?? [], ['label'])
+  const [{ data }, metrics] = await Promise.all([
+    supabase.from('web_stats').select('*').eq('is_active', true).order('sort_order'),
+    coverageMetrics(),
+  ])
+
+  const stats = await withTokens((data as Stat[]) ?? [], ['label'])
+
+  return stats.map((stat) =>
+    stat.metric && metrics[stat.metric] ? { ...stat, value: metrics[stat.metric] } : stat,
+  )
 }
 
 export async function getVersions(): Promise<AppVersion[]> {

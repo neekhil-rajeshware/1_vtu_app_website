@@ -11,6 +11,8 @@ const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string
     title: 'Product',
     links: [
       { href: '/features', label: 'All features' },
+      { href: '/vtu-result-dates', label: 'VTU result dates' },
+      { href: '/coverage', label: 'What is in the app' },
       { href: '/screenshots', label: 'Screenshots' },
       { href: '/download', label: 'Download' },
       { href: '/setup', label: 'Setup guide' },

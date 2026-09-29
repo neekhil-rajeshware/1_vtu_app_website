@@ -55,6 +55,8 @@ export async function GET() {
     '',
     `- [Home](${base}/): what the app does, with screenshots and the FAQ.`,
     `- [Features](${base}/features): every feature, grouped.`,
+    `- [VTU result dates](${base}/vtu-result-dates): when VTU declares each semester's result, where to check it, and the revaluation fees and deadlines.`,
+    `- [Coverage](${base}/coverage): live counts of the branches, schemes, syllabuses, previous-year question papers and GATE papers in the app, including what is still missing.`,
     `- [Screenshots](${base}/screenshots): the app screen by screen.`,
     `- [Download](${base}/download): install, requirements, and the version history.`,
     `- [Setup guide](${base}/setup): installing and setting the app up, step by step.`,

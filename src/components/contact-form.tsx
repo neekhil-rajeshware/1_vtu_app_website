@@ -23,17 +23,29 @@ const inputClass =
  * Public contact form. Writes straight into `web_messages` using the
  * publishable key — the database policy only permits an insert with sensible
  * field lengths and status 'new', and nobody except an admin can read them back.
+ *
+ * `prefill` is how the "Request this" buttons on `/coverage` arrive: they link
+ * here with the subject and a half-written message, so the student adds their
+ * name and sends rather than composing a request from scratch. A subject that
+ * is not in the list is ignored — the `<select>` has no option for it and would
+ * render blank.
  */
-export function ContactForm({ responseTime }: { responseTime?: string }) {
+export function ContactForm({
+  responseTime,
+  prefill,
+}: {
+  responseTime?: string
+  prefill?: { subject?: string; message?: string }
+}) {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState(() => ({
     name: '',
     email: '',
-    subject: SUBJECTS[0],
-    message: '',
+    subject: SUBJECTS.includes(prefill?.subject ?? '') ? prefill!.subject! : SUBJECTS[0],
+    message: prefill?.message ?? '',
     honeypot: '',
-  })
+  }))
 
   const update = (key: keyof typeof form) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }))

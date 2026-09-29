@@ -11,6 +11,7 @@ const STATIC_ROUTES: Array<{
   { path: '/features', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/screenshots', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/download', priority: 0.9, changeFrequency: 'weekly' },
+  { path: '/coverage', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/setup', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/about', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
@@ -24,13 +25,14 @@ const STATIC_ROUTES: Array<{
 ]
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = publicWebsiteUrl(await getSettings())
+  const settings = await getSettings()
+  const base = publicWebsiteUrl(settings)
   const now = new Date()
 
   /*
    * No `lastModified` on the static routes. These pages are rendered per request
    * and their content lives in the database, so there is no build-time date to
-   * report — and stamping every URL with `new Date()` claims all fourteen
+   * report — and stamping every URL with `new Date()` claims every one of them
    * changed on every single crawl. Google discards a `lastmod` it learns to
    * distrust, which would also throw away the honest ones below.
    */
@@ -39,6 +41,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     changeFrequency: route.changeFrequency,
     priority: route.priority,
   }))
+
+  /*
+   * The results hub is the exception that proves the rule above: it is the one
+   * page a human edits by hand the day VTU announces something, and that edit
+   * date is exactly what its ranking depends on. So it is kept out of
+   * STATIC_ROUTES and given a real `lastModified` — when one exists. An empty
+   * `updated_at` means nobody has checked the page yet, and an absent `lastmod`
+   * is more honest than a fabricated one.
+   */
+  const resultEntries: MetadataRoute.Sitemap = [
+    {
+      url: `${base}/vtu-result-dates`,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+      ...(settings.results.updated_at
+        ? { lastModified: new Date(settings.results.updated_at) }
+        : {}),
+    },
+  ]
 
   // Posts do have a real edit time, so they get one.
   const posts = await getPublishedPosts()
@@ -63,5 +84,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }))
 
-  return [...staticEntries, ...featureEntries, ...postEntries]
+  return [...staticEntries, ...resultEntries, ...featureEntries, ...postEntries]
 }
