@@ -2,9 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Database, RefreshCw } from 'lucide-react'
 import {
-  CoverageGrid,
   CoverageMeter,
   GridLegend,
+  SchemeBranchTable,
   StatTile,
 } from '@/components/coverage'
 import { CoverageChecker } from '@/components/coverage-checker'
@@ -20,7 +20,7 @@ import {
   Section,
   SectionHeading,
 } from '@/components/ui'
-import { checkerRows, getCoverage, type CoverageBranch } from '@/lib/coverage'
+import { checkerRows, getCoverage, schemeTables } from '@/lib/coverage'
 import { absoluteUrl, pageMetadata } from '@/lib/seo'
 import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 import { formatDate } from '@/lib/utils'
@@ -43,11 +43,31 @@ import { formatDate } from '@/lib/utils'
  * No breadcrumb, on purpose: this is a top-level page, and `lib/seo.ts` reserves
  * BreadcrumbList for pages nested under one.
  */
+/**
+ * The description is built from the live counts rather than typed, for the same
+ * reason the page is: a number in a `<meta>` tag rots exactly as quietly as one
+ * in the body, and this is the copy Google shows. `getCoverage()` is wrapped in
+ * React's `cache()`, so this second call costs no extra query.
+ */
 export async function generateMetadata(): Promise<Metadata> {
+  const coverage = await getCoverage()
+  const catalogue = coverage?.snapshot.catalogue
+
+  const schemes = (catalogue?.schemes ?? [])
+    .filter((scheme) => scheme.subjects > 0)
+    .map((scheme) => scheme.name)
+
+  const description = catalogue
+    ? `${catalogue.rows.toLocaleString('en-IN')} VTU subjects across ` +
+      `${catalogue.branches_covered} of ${catalogue.branches_total} branches` +
+      (schemes.length > 0 ? `, on the ${joinList(schemes)} schemes` : '') +
+      ' — counted live from the database, gaps included.'
+    : 'Exactly how many branches, schemes, syllabuses, previous-year papers and ' +
+      'GATE papers the OneVTU app holds right now, including what is still missing.'
+
   return pageMetadata({
-    title: 'App Coverage',
-    description:
-      'Exactly how many branches, schemes, syllabuses, previous-year papers and GATE papers the OneVTU app holds right now — including what is still missing, and how to ask for your branch.',
+    title: 'VTU Coverage — Schemes, Branches and Syllabuses',
+    description,
     path: '/coverage',
   })
 }
@@ -58,6 +78,19 @@ const SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8']
 function joinList(items: string[]) {
   if (items.length <= 1) return items[0] ?? ''
   return `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`
+}
+
+/**
+ * A stable in-page anchor, prefixed so it is a valid CSS identifier:
+ * "2025 CBCS" → "scheme-2025-cbcs". Unprefixed it begins with a digit, which
+ * fragment navigation tolerates but `querySelector` and `:target` do not.
+ */
+function schemeAnchor(name: string) {
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+  return `scheme-${slug}`
 }
 
 export default async function CoveragePage() {
@@ -88,33 +121,14 @@ export default async function CoveragePage() {
 
   const { catalogue, pyq, gate, library } = coverage.snapshot
   const rows = checkerRows(coverage)
+  const tables = schemeTables(coverage)
 
-  /*
-   * The grid gets all fifty branches, not just the ten with rows.
-   *
-   * The catalogue only reports branches that have something, which is the right
-   * shape for a count and the wrong shape for a grid: a student in Artificial
-   * Intelligence & Data Science would find no row for their branch and have to
-   * infer the absence from a total. Filling in the rest with empty rows costs
-   * forty lines of grey and turns "is my branch here?" into a glance.
-   */
-  const gridBranches: CoverageBranch[] = [
-    ...catalogue.branches,
-    ...coverage.allBranches
-      .filter((branch) => !catalogue.branches.some((row) => row.code === branch.code))
-      .map((branch) => ({
-        code: branch.code,
-        name: branch.name,
-        stream: '',
-        subjects: 0,
-        with_syllabus: 0,
-        by_semester: {},
-      })),
-  ]
-
-  // Which scheme has rows, from the data rather than from a hardcoded code.
-  const liveScheme = catalogue.schemes.find((scheme) => scheme.subjects > 0)
+  // Which schemes have rows, from the data rather than from a hardcoded code.
+  // There is usually more than one now, so the prose names them as a list —
+  // "the 2025 CBCS scheme" was true until the 2022 rows landed on 2026-09-30.
+  const liveSchemes = catalogue.schemes.filter((scheme) => scheme.subjects > 0)
   const emptySchemes = catalogue.schemes.filter((scheme) => scheme.subjects === 0)
+  const liveSchemeNames = joinList(liveSchemes.map((scheme) => scheme.name))
 
   // Semesters with nothing for anybody — the single biggest hole, and one a
   // student cannot see from the totals above.
@@ -129,10 +143,26 @@ export default async function CoveragePage() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
-    name: 'App Coverage',
+    name: 'VTU coverage — schemes, branches and syllabuses',
     url: absoluteUrl(base, '/coverage'),
     description:
       'Live counts of the branches, schemes, syllabuses, previous-year question papers and GATE papers held in the OneVTU app.',
+    /*
+     * Names what the page is about, in the words a student would search. The
+     * scheme list is read from the data, so a scheme that gains its first
+     * subject joins this without an edit here.
+     */
+    about: liveSchemes.map((scheme) => ({
+      '@type': 'Thing',
+      name: `VTU ${scheme.name} scheme`,
+    })),
+    keywords: [
+      'VTU syllabus',
+      'VTU scheme subjects',
+      'VTU branch subjects',
+      ...liveSchemes.map((scheme) => `VTU ${scheme.name} scheme subjects`),
+    ].join(', '),
+    isAccessibleForFree: true,
   }
 
   return (
@@ -166,8 +196,8 @@ export default async function CoveragePage() {
               label="Subjects in the catalogue"
               value={catalogue.rows}
               detail={
-                liveScheme
-                  ? `All of them on the ${liveScheme.name} scheme`
+                liveSchemes.length > 0
+                  ? `Across the ${liveSchemeNames} scheme${liveSchemes.length === 1 ? '' : 's'}`
                   : 'No scheme has subjects yet'
               }
             />
@@ -263,7 +293,8 @@ export default async function CoveragePage() {
                   <p className="mt-2">
                     Not thin — empty. No branch has a single subject for{' '}
                     {emptySemesters.length === 1 ? 'this semester' : 'these semesters'}{' '}
-                    yet, so the app has nothing to show anyone in them.
+                    yet, so the app has nothing to show anyone{' '}
+                    {emptySemesters.length === 1 ? 'in it' : 'in them'}.
                   </p>
                 </div>
               ) : null}
@@ -275,7 +306,7 @@ export default async function CoveragePage() {
                   </h3>
                   <p className="mt-2">
                     The subject list is built for{' '}
-                    {liveScheme ? liveScheme.name : 'one scheme'} so far.{' '}
+                    {liveSchemes.length > 0 ? liveSchemeNames : 'one scheme'} so far.{' '}
                     {joinList(emptySchemes.map((scheme) => scheme.name))}{' '}
                     {emptySchemes.length === 1 ? 'has' : 'have'} no subjects, so a
                     student on {emptySchemes.length === 1 ? 'it' : 'them'} sees an
@@ -296,26 +327,117 @@ export default async function CoveragePage() {
       <Section className="border-t border-border">
         <Container>
           <SectionHeading
-            eyebrow="Branch by semester"
-            title="The whole catalogue at a glance"
-            subtitle="Darker means more subjects. A blank cell means nothing has been added for that combination yet."
+            eyebrow="Scheme by scheme"
+            title="Every branch, under the scheme it belongs to"
+            subtitle="One table per scheme, because a branch can be covered under one scheme and not another. A stronger shade means more subjects; a dash means nothing has been added for that combination yet."
             align="left"
           />
 
-          <div className="mt-8 rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="mt-4">
             <GridLegend />
-            <div className="mt-5">
-              <CoverageGrid branches={gridBranches} />
-            </div>
           </div>
 
-          <p className="mt-4 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-            Every branch is listed, so a row of dashes is a real answer and not an
-            omission. First year has its own row because it is common to every
-            branch — a student in a branch with no subjects of its own still gets
-            their first-year subjects, which is why semesters 1 and 2 are the
-            fullest. The catalogue is built on the{' '}
-            {liveScheme ? liveScheme.name : 'live'} scheme.
+          {/*
+            Jump links, because the tables are long and a student arrives knowing
+            their scheme already. They also make the page's structure legible to
+            a crawler in one line, before 90 rows of table.
+          */}
+          {tables.length > 1 ? (
+            <nav aria-label="Jump to a scheme" className="mt-5 flex flex-wrap gap-2">
+              {tables.map((table) => (
+                <a
+                  key={table.code}
+                  href={`#${schemeAnchor(table.name)}`}
+                  className="rounded-full border border-border bg-card px-3.5 py-1.5 text-sm font-medium transition-colors hover:border-primary/40 hover:text-primary dark:hover:text-accent-foreground"
+                >
+                  {table.name}
+                </a>
+              ))}
+            </nav>
+          ) : null}
+
+          <div className="mt-8 space-y-12">
+            {tables.map((table) => (
+              <div key={table.code} id={schemeAnchor(table.name)} className="scroll-mt-28">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h3 className="text-xl font-bold tracking-tight">
+                    {table.name} scheme subjects, branch by branch
+                  </h3>
+                  <span className="text-sm text-muted-foreground">
+                    {n(table.subjects)} subjects across {table.rows.length} branches
+                  </span>
+                </div>
+
+                <div className="mt-4 rounded-2xl border border-border bg-card p-5 sm:p-6">
+                  <SchemeBranchTable
+                    rows={table.rows}
+                    semesters={table.semesters}
+                    label="Branch"
+                    caption={`Subjects in the OneVTU app for the VTU ${table.name} scheme, by branch and semester. A dash means nothing has been added for that combination yet.`}
+                  />
+                </div>
+
+                <div className="mt-4 max-w-3xl space-y-3 text-sm leading-relaxed text-muted-foreground">
+                  <p>
+                    {table.emptySemesters.length > 0 ? (
+                      <>
+                        The {table.name} table stops at semester{' '}
+                        {table.semesters.at(-1)} because{' '}
+                        {table.emptySemesters.length === 1
+                          ? 'semester'
+                          : 'semesters'}{' '}
+                        {joinList(table.emptySemesters)}{' '}
+                        {table.emptySemesters.length === 1 ? 'has' : 'have'} nothing for
+                        anyone on this scheme yet.{' '}
+                      </>
+                    ) : null}
+                    {table.schemeHasFirstYear
+                      ? `Semesters 1 and 2 include first year, which every branch shares, so ` +
+                        `the same subjects are counted in every row — which is why the All ` +
+                        `column adds up to more than the ${n(table.subjects)} above.`
+                      : 'This scheme has no first-year rows, because the students on it are past first year.'}{' '}
+                    Only semesters {table.semesters[0]} to {table.semesters.at(-1)} are
+                    listed, because that is the whole span this scheme has subjects for.
+                  </p>
+
+                  {table.missingBranches.length > 0 ? (
+                    <p>
+                      <span className="font-semibold text-foreground">
+                        {table.missingBranches.length} branches have nothing on the{' '}
+                        {table.name} scheme
+                      </span>
+                      : {joinList(table.missingBranches.slice(0, 12))}
+                      {table.missingBranches.length > 12
+                        ? ` and ${table.missingBranches.length - 12} more`
+                        : ''}
+                      .
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {emptySchemes.length > 0 ? (
+            <p className="mt-12 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+              {joinList(emptySchemes.map((scheme) => `${scheme.name}`))}{' '}
+              {emptySchemes.length === 1 ? 'has' : 'have'} no subjects at all, so{' '}
+              {emptySchemes.length === 1 ? 'it has' : 'they have'} no table here. A
+              page with a heading and nothing under it would be worse than the
+              absence.
+            </p>
+          ) : null}
+
+          <p className="mt-6 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            Where a row is filled, the app opens the{' '}
+            <Link
+              href="/features/vtu-syllabus"
+              className="font-semibold text-primary hover:underline dark:text-accent-foreground"
+            >
+              syllabus for that subject
+            </Link>
+            , searchable offline, along with its previous-year question papers once
+            we have them.
           </p>
         </Container>
       </Section>

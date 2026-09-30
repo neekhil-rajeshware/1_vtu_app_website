@@ -1,5 +1,3 @@
-import type { CoverageBranch } from '@/lib/coverage'
-
 /**
  * The figures on `/coverage`.
  *
@@ -105,8 +103,6 @@ export function CoverageMeter({
   )
 }
 
-const SEMESTERS = ['1', '2', '3', '4', '5', '6', '7', '8']
-
 /**
  * Fill for a cell, and the ink that stays legible on it.
  *
@@ -126,40 +122,50 @@ function cellStyle(count: number): { className: string; ink: string } {
 }
 
 /**
- * Branch against semester, shaded by how many subjects the catalogue holds.
+ * A branch against a set of semesters, shaded by how many subjects it holds.
  *
  * A heatmap because the job is comparing magnitude across a grid — and because
- * the empty cells are the point. This is the one view where a student whose
- * branch is missing sees it immediately rather than inferring it from a total,
- * which is why every branch gets a row even when all eight of its cells are
- * bare. A grid that listed only the branches we have would hide exactly the
- * thing it exists to show.
+ * the empty cells are the point. A student whose branch is missing sees it
+ * immediately rather than inferring it from a total, which is why the row set is
+ * chosen to be complete for its scheme rather than only the flattering half.
  *
  * Rendered as a real `<table>`: a screen reader gets row and column headers for
- * free, and every empty cell carries the word "nothing yet" in its label rather
- * than relying on a grey the reader may not be able to distinguish.
+ * free, every empty cell carries the word "nothing yet" in its label rather than
+ * relying on a grey the reader may not be able to distinguish, and a crawler
+ * reads a caption, headings and a full set of branch names rather than a canvas.
  */
-export function CoverageGrid({ branches }: { branches: CoverageBranch[] }) {
-  const ordered = [...branches].sort((a, b) => {
-    // First year first — it is the one row that applies to everybody.
-    if (a.code === 'FIRST') return -1
-    if (b.code === 'FIRST') return 1
-    return b.subjects - a.subjects || a.name.localeCompare(b.name)
-  })
+export type SchemeRow = {
+  code: string
+  name: string
+  bySemester: Record<string, number>
+  total: number
+}
+
+export function SchemeBranchTable({
+  rows,
+  semesters,
+  caption,
+  label,
+}: {
+  rows: SchemeRow[]
+  /** The columns to draw, in order — a scheme's own span, not always all eight. */
+  semesters: string[]
+  caption: string
+  /** Names the table row headers, e.g. "Branch". */
+  label: string
+}) {
+  const ordered = [...rows].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name))
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[42rem] border-separate border-spacing-[2px] text-left">
-        <caption className="sr-only">
-          Subjects in the app for each branch and semester. An empty cell means no
-          subjects have been added for that combination yet.
-        </caption>
+      <table className="w-full min-w-[19rem] border-separate border-spacing-[2px] text-left sm:min-w-[34rem]">
+        <caption className="sr-only">{caption}</caption>
         <thead>
           <tr>
             <th scope="col" className="pb-2 pr-3 text-xs font-semibold text-muted-foreground">
-              Branch
+              {label}
             </th>
-            {SEMESTERS.map((semester) => (
+            {semesters.map((semester) => (
               <th
                 key={semester}
                 scope="col"
@@ -168,23 +174,30 @@ export function CoverageGrid({ branches }: { branches: CoverageBranch[] }) {
                 {semester}
               </th>
             ))}
+            <th
+              scope="col"
+              className="pb-2 pl-3 text-center text-xs font-semibold text-muted-foreground"
+            >
+              All
+            </th>
           </tr>
         </thead>
         <tbody>
           {ordered.map((branch) => (
             <tr key={branch.code}>
-              <th scope="row" className="max-w-[16rem] py-1 pr-3 text-left align-middle">
-                <span className="block truncate text-sm font-medium">
-                  {branch.code === 'FIRST' ? 'First year' : branch.code}
-                </span>
-                <span className="block truncate text-xs font-normal text-muted-foreground">
-                  {/* The catalogue's fallback name for this row is a sentence,
-                      not a name, and repeating it here reads as a mistake. */}
-                  {branch.code === 'FIRST' ? 'Every branch' : branch.name}
+              <th scope="row" className="py-1 pr-3 text-left align-middle sm:max-w-[16rem]">
+                <span className="block text-sm font-medium">{branch.code}</span>
+                {/* The full name is what makes a row scannable, and what pushes
+                    every number off a phone screen. Below `sm` the code alone is
+                    the label and the name is announced rather than drawn — the
+                    reader knows their own branch code, and the numbers are the
+                    reason they came. */}
+                <span className="sr-only text-xs font-normal text-muted-foreground sm:not-sr-only sm:block sm:truncate">
+                  {branch.name}
                 </span>
               </th>
-              {SEMESTERS.map((semester) => {
-                const count = branch.by_semester[semester] ?? 0
+              {semesters.map((semester) => {
+                const count = branch.bySemester[semester] ?? 0
                 const { className, ink } = cellStyle(count)
                 return (
                   <td key={semester} className="p-0">
@@ -201,6 +214,11 @@ export function CoverageGrid({ branches }: { branches: CoverageBranch[] }) {
                   </td>
                 )
               })}
+              <td className="p-0">
+                <div className="grid h-9 w-full min-w-[2.75rem] place-items-center rounded bg-muted/60 text-xs font-bold tabular-nums">
+                  {branch.total > 0 ? branch.total : '—'}
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>

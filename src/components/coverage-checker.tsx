@@ -63,13 +63,13 @@ export function CoverageChecker({
         ok: false,
         title: `Nothing for the ${scheme.name} scheme yet`,
         body:
-          `The app's subject list is built for the 2025 scheme so far. If you are on ` +
-          `${scheme.name}, we do not have your subjects — tell us and it moves up the list.`,
+          `The app's subject list does not cover ${scheme.name} at all. If that is ` +
+          `your scheme, we do not have your subjects — tell us and it moves up the list.`,
         request: href,
       }
     }
 
-    const count = branch.counts[semester] ?? 0
+    const count = branch.byScheme[schemeCode]?.[semester] ?? 0
     if (count === 0) {
       return {
         ok: false,
