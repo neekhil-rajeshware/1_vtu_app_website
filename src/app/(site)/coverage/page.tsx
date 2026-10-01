@@ -219,7 +219,7 @@ export default async function CoveragePage() {
             <StatTile
               label="GATE papers, keys and solutions"
               value={gate.filled}
-              detail={`Across ${gate.years} years, 2014 to 2026`}
+              detail={`Across ${gate.years} years, 2007 to 2026`}
             />
             <StatTile
               label="Colleges on file"

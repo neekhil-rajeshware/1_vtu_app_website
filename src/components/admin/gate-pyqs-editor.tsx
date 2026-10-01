@@ -47,7 +47,7 @@ import { cn } from '@/lib/utils'
  */
 
 /** Every GATE year the table has a column for, newest first. */
-const YEARS = Array.from({ length: 13 }, (_, i) => 2026 - i)
+const YEARS = Array.from({ length: 20 }, (_, i) => 2026 - i)
 
 type Branch = { code: string; name: string }
 

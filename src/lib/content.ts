@@ -392,12 +392,22 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 const TAG_FEATURE_SLUG: Record<string, string> = {
   cgpa: 'vtu-cgpa-calculator',
   'internal marks': 'vtu-internal-marks',
+  // Both of these are about the same arithmetic the internal-marks calculator
+  // performs: what your CIE adds up to, and how close that leaves you to the
+  // pass mark. Neither is a feature of its own, so they share one honest link
+  // rather than being left unmapped.
+  'grace marks': 'vtu-internal-marks',
+  'passing marks': 'vtu-internal-marks',
   attendance: 'vtu-attendance-tracker',
   syllabus: 'vtu-syllabus',
   '2025 scheme': 'vtu-syllabus',
   'vtu 2025 scheme': 'vtu-syllabus',
   results: 'vtu-results',
   revaluation: 'vtu-results',
+  // Same reason as grace/passing marks above: "backlogs" is not a screen of its
+  // own. It is the arrears half of the Results vault — which semesters are
+  // outstanding and which attempt cleared them — so it points there.
+  backlogs: 'vtu-results',
   rag: 'ai-professor',
 }
 
