@@ -5,6 +5,7 @@ import { ArrowRight, Download } from 'lucide-react'
 import { Breadcrumbs } from '@/components/breadcrumbs'
 import { DynamicIcon } from '@/components/dynamic-icon'
 import { JsonLd } from '@/components/json-ld'
+import { PostCard } from '@/components/post-card'
 import { ClosingCta } from '@/components/sections/closing-cta'
 import { FaqSection } from '@/components/sections/faq'
 import { ButtonLink, Container, Section } from '@/components/ui'
@@ -13,6 +14,8 @@ import {
   getFeatureFaqs,
   getFeaturesWithPages,
   getHomeSections,
+  getPublishedPosts,
+  postsForFeature,
 } from '@/lib/content'
 import { absoluteUrl, breadcrumbJsonLd, pageMetadata } from '@/lib/seo'
 import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
@@ -61,23 +64,36 @@ export default async function FeaturePage({ params }: Params) {
 
   if (!feature || !feature.slug) notFound()
 
-  const [settings, faqs, allWithPages, sections] = await Promise.all([
+  const [settings, faqs, allWithPages, sections, posts] = await Promise.all([
     getSettings(),
     getFeatureFaqs(feature.slug),
     getFeaturesWithPages(),
     getHomeSections(),
+    getPublishedPosts(),
   ])
 
   const name = appName(settings)
   const base = publicWebsiteUrl(settings)
   const path = `/features/${feature.slug}`
 
-  // Other features that have pages, so each one links onward instead of being a
-  // dead end. Two is enough: the point is to show a crawler the trail, not to
-  // pad the page.
-  const related = allWithPages
-    .filter((item) => item.slug !== feature.slug)
-    .slice(0, 3)
+  /*
+   * Other features that have pages, so each one links onward instead of being a
+   * dead end. Siblings first: "AI Professor" and "AI Notebook" are the pair a
+   * reader actually wants next, where the first three by `sort_order` would put
+   * the same three links on all nine pages — a block a crawler reads as
+   * boilerplate rather than as a link. Three is enough; this is a trail, not a
+   * directory.
+   */
+  const others = allWithPages.filter((item) => item.slug !== feature.slug)
+  const related = [
+    ...others.filter((item) => item.group_name === feature.group_name),
+    ...others.filter((item) => item.group_name !== feature.group_name),
+  ].slice(0, 3)
+
+  // Posts whose tags name this feature — the reverse of the block a post shows.
+  // Usually empty for a feature nothing has been written about yet, and an empty
+  // list renders nothing rather than a filler link.
+  const postsHere = postsForFeature(feature, posts).slice(0, 3)
 
   const crumbs = [
     { name: 'Home', path: '/' },
@@ -85,6 +101,13 @@ export default async function FeaturePage({ params }: Params) {
     { name: feature.title, path },
   ]
 
+  /*
+   * `isPartOf` and `about` point at the site's own WebSite and MobileApplication
+   * nodes by `@id` rather than drawing new anonymous ones. Two nodes with no
+   * `@id` are two different entities to a crawler, so the old version told it
+   * about nine WebSites and nine apps — one per feature page — none of which was
+   * the one declared on the home page.
+   */
   const webPageJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebPage',
@@ -92,8 +115,8 @@ export default async function FeaturePage({ params }: Params) {
     description: feature.seo_description || feature.short_description || undefined,
     url: absoluteUrl(base, path),
     inLanguage: 'en-IN',
-    isPartOf: { '@type': 'WebSite', name, url: base },
-    about: { '@type': 'MobileApplication', name, applicationCategory: 'EducationalApplication' },
+    isPartOf: { '@id': `${base}/#website` },
+    about: { '@id': `${base}/#app` },
   }
 
   return (
@@ -219,12 +242,42 @@ export default async function FeaturePage({ params }: Params) {
         </Container>
       </Section>
 
+      {postsHere.length > 0 ? (
+        <Section className="border-t border-border">
+          <Container>
+            <div className="flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-secondary">
+                  From the blog
+                </p>
+                <h2 className="mt-2 text-2xl font-bold tracking-tight">
+                  How {feature.title} works
+                </h2>
+              </div>
+              <Link
+                href="/blog"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary dark:text-accent-foreground"
+              >
+                All posts
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+            <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {postsHere.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+          </Container>
+        </Section>
+      ) : null}
+
       {faqs.length > 0 ? (
         <div className="border-t border-border bg-muted/40">
           <FaqSection
             faqs={faqs}
             showHeading={false}
             heading={`${feature.title}: common questions`}
+            emitJsonLd
           />
         </div>
       ) : null}

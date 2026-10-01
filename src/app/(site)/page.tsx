@@ -109,7 +109,7 @@ export default async function HomePage() {
       ) : null}
       {visible('blog') ? <BlogTeaser section={sections.blog} posts={posts} /> : null}
       {visible('faq') ? (
-        <FaqSection section={sections.faq} faqs={faqs} grouped />
+        <FaqSection section={sections.faq} faqs={faqs} grouped emitJsonLd />
       ) : null}
       {visible('cta') ? (
         <ClosingCta section={sections.cta} settings={settings} />

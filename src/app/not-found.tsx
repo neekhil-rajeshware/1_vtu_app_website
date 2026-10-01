@@ -1,6 +1,21 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowRight, Home } from 'lucide-react'
 import { buttonClass, Container } from '@/components/ui'
+
+/*
+ * Title only, deliberately.
+ *
+ * Without it the 404 inherits the root layout's title template, and a crawler
+ * hitting a dead URL reads a page headed like the home page.
+ *
+ * No `robots` here either: Next.js already emits `<meta name="robots"
+ * content="noindex">` for this route, and the root layout no longer adds a
+ * contradictory `index, follow` on top of it.
+ */
+export const metadata: Metadata = {
+  title: 'Page not found',
+}
 
 export default function NotFound() {
   return (

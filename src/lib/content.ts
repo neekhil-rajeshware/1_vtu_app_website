@@ -375,6 +375,71 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
   return post
 }
 
+/**
+ * Which feature page a blog tag points at.
+ *
+ * Tags are free-form text an author typed; feature slugs are stable identifiers.
+ * Nothing derives one from the other — "CGPA" and `vtu-cgpa-calculator` share no
+ * substring, and "Internal Marks" is not `vtu-internal-marks` — so the
+ * relationship is written down. Keys are matched lowercased, because this
+ * database stores the same tag as both "fresher" and "Fresher" elsewhere.
+ *
+ * Deliberately short. A tag earns a rule only when the feature page is what the
+ * post is *about*; `Engineering`, `AI` and `Guides` are themes, not features, and
+ * mapping them would staple the same link to twenty posts, which is how an
+ * internal link stops meaning anything.
+ */
+const TAG_FEATURE_SLUG: Record<string, string> = {
+  cgpa: 'vtu-cgpa-calculator',
+  'internal marks': 'vtu-internal-marks',
+  attendance: 'vtu-attendance-tracker',
+  syllabus: 'vtu-syllabus',
+  '2025 scheme': 'vtu-syllabus',
+  'vtu 2025 scheme': 'vtu-syllabus',
+  results: 'vtu-results',
+  revaluation: 'vtu-results',
+  rag: 'ai-professor',
+}
+
+/**
+ * The feature pages a post should link to, in the order `features` was passed.
+ *
+ * Returns nothing for most posts, and that is the honest answer: a dev diary
+ * about TLS in the result fetcher has no tag that names a feature. An empty
+ * result renders no block rather than a guessed link.
+ */
+export function featuresForPost(
+  post: Post,
+  features: Feature[],
+): Array<Feature & { slug: string }> {
+  const wanted = new Set(
+    (post.tags ?? [])
+      .map((tag) => TAG_FEATURE_SLUG[tag.trim().toLowerCase()])
+      .filter(Boolean),
+  )
+  // `getFeatures()` returns every active feature, slugged or not, so the slug
+  // has to be re-checked here — and narrowing it in the predicate saves every
+  // caller the same `feature.slug!`. A feature with no slug has no page to link
+  // to; see the note in `features/[slug]/page.tsx`.
+  return features.filter(
+    (feature): feature is Feature & { slug: string } =>
+      feature.slug !== null && wanted.has(feature.slug),
+  )
+}
+
+/** The posts that belong on a feature page, newest first. */
+export function postsForFeature(feature: Feature, posts: Post[]): Post[] {
+  if (!feature.slug) return []
+  const tags = new Set(
+    Object.entries(TAG_FEATURE_SLUG)
+      .filter(([, slug]) => slug === feature.slug)
+      .map(([tag]) => tag),
+  )
+  return posts.filter((post) =>
+    (post.tags ?? []).some((tag) => tags.has(tag.trim().toLowerCase())),
+  )
+}
+
 /** Groups features in the order the groups first appear. */
 export function groupFeatures(features: Feature[]) {
   const groups: Array<{ name: string; items: Feature[] }> = []

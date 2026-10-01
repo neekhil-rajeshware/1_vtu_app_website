@@ -2,12 +2,18 @@ import type { Metadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Clock } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Clock } from 'lucide-react'
+import { DynamicIcon } from '@/components/dynamic-icon'
 import { JsonLd } from '@/components/json-ld'
 import { PostCard } from '@/components/post-card'
 import { Container, Section, SectionHeading } from '@/components/ui'
-import { getPostBySlug, getPublishedPosts } from '@/lib/content'
-import { absoluteUrl, breadcrumbJsonLd } from '@/lib/seo'
+import {
+  featuresForPost,
+  getFeaturesWithPages,
+  getPostBySlug,
+  getPublishedPosts,
+} from '@/lib/content'
+import { absoluteUrl, breadcrumbJsonLd, browserTitle } from '@/lib/seo'
 import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
 import { formatDate, readingTime } from '@/lib/utils'
 
@@ -40,7 +46,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const socialTitle = `${title} — ${name}`
 
   return {
-    title,
+    title: browserTitle(title, name),
     description,
     alternates: { canonical: `/blog/${post.slug}` },
     openGraph: {
@@ -69,23 +75,57 @@ export default async function PostPage({ params }: Params) {
   if (!post) notFound()
 
   const published = post.published_at ?? post.created_at
-  const [all, settings] = await Promise.all([getPublishedPosts(), getSettings()])
-  const related = all.filter((item) => item.slug !== post.slug).slice(0, 3)
+  const [all, features, settings] = await Promise.all([
+    getPublishedPosts(),
+    getFeaturesWithPages(),
+    getSettings(),
+  ])
   const base = publicWebsiteUrl(settings)
   const url = absoluteUrl(base, `/blog/${post.slug}`)
+
+  const postFeatures = featuresForPost(post, features)
+
+  /*
+   * Related by shared tag, not by recency. "The three newest posts" is not a
+   * recommendation — it is the same three links on every post on the site, which
+   * is a link block a crawler reads as boilerplate. Tags are the topical signal
+   * that already exists, and `all` arrives newest-first, so a stable sort on the
+   * shared count leaves recency as the tiebreak for free.
+   */
+  const tags = new Set((post.tags ?? []).map((tag) => tag.trim().toLowerCase()))
+  const related = all
+    .filter((item) => item.slug !== post.slug)
+    .map((item) => ({
+      item,
+      shared: (item.tags ?? []).filter((tag) => tags.has(tag.trim().toLowerCase())).length,
+    }))
+    .sort((a, b) => b.shared - a.shared)
+    .filter((scored) => scored.shared > 0)
+    .slice(0, 3)
+    .map((scored) => scored.item)
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.meta_description || post.excerpt || undefined,
-    image: post.cover_image_url || undefined,
+    /*
+     * Never undefined. All 22 posts have a null `cover_image_url`, so this field
+     * was being dropped from every payload — and `image` is one of the properties
+     * Google lists as required for an article rich result. Falls back to the same
+     * generated OG card the social tags already use, so the value is real.
+     */
+    image: post.cover_image_url || `${base}/og`,
     datePublished: published,
     dateModified: post.updated_at,
     inLanguage: 'en-IN',
-    // No `author` name: posts are written by the app's publisher, and the
-    // developer name in settings ships blank by design, so naming an author
-    // would mean inventing one.
+    /*
+     * The publisher, as the author. Posts carry no byline — there is no person to
+     * name, and the developer name in settings ships blank by design, so inventing
+     * one would be a fabricated credential. An organisation is a valid `author`
+     * and is the truthful answer to who wrote this.
+     */
+    author: { '@type': 'Organization', name: appName(settings), url: base },
     publisher: { '@type': 'Organization', name: appName(settings), url: base },
     mainEntityOfPage: { '@type': 'WebPage', '@id': url },
   }
@@ -173,12 +213,51 @@ export default async function PostPage({ params }: Params) {
           </Container>
         </Section>
 
+        {postFeatures.length > 0 ? (
+          <Section className="border-t border-border">
+            <Container>
+              <div className="mx-auto max-w-3xl">
+                <h2 className="text-lg font-bold tracking-tight">This, in the app</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  The part of One VTU this post is about.
+                </p>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  {postFeatures.map((feature) => (
+                    <Link
+                      key={feature.id}
+                      href={`/features/${feature.slug}`}
+                      className="group flex items-start gap-3 rounded-2xl border border-border bg-card p-4 transition-colors hover:border-primary/40"
+                    >
+                      <DynamicIcon
+                        name={feature.icon}
+                        className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold">{feature.title}</span>
+                        {feature.short_description ? (
+                          <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                            {feature.short_description}
+                          </span>
+                        ) : null}
+                        <span className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+                          Read more
+                          <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                        </span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </Container>
+          </Section>
+        ) : null}
+
         {related.length > 0 ? (
           <Section className="border-t border-border bg-muted/40">
             <Container>
               <SectionHeading
                 eyebrow="Keep reading"
-                title="More from the blog"
+                title="Related reading"
                 align="left"
               />
               <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">

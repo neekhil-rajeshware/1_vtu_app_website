@@ -23,7 +23,9 @@ const GEMINI_KEYS_URL = 'https://aistudio.google.com/api-keys'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'Setup guide',
+    // "Setup guide" alone was 23 characters of title tag that named nothing —
+    // nobody searches for it, because it does not say what is being set up.
+    title: 'Set Up the VTU Study App',
     description:
       'Install One VTU and set it up step by step: account, profile, reminders, subjects, your free Gemini API key, and the daily study loop.',
     path: '/setup',

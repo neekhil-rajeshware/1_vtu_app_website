@@ -14,6 +14,32 @@ import { appName, getSettings, publicWebsiteUrl, type AllSettings } from '@/lib/
  */
 
 /**
+ * A result snippet shows roughly sixty characters before it truncates.
+ *
+ * Pixel width is what Google actually measures, but a character count is close
+ * enough for a yes/no decision and needs no font metrics at build time.
+ */
+const TITLE_BUDGET = 60
+
+/**
+ * The browser-tab and search-result title.
+ *
+ * The root layout appends " — One VTU" through its `%s` template, which costs
+ * ten characters. That is free on a short title and expensive on a long one:
+ * eight of the nine feature pages carry a `seo_title` of 50–68 characters before
+ * the suffix, so the branded form runs past the budget and what gets cut is the
+ * descriptive tail — the part holding the words someone actually typed.
+ *
+ * Past the budget the suffix buys nothing anyway: Google prints the site name on
+ * its own line in results, taken from the `WebSite` node this site already
+ * emits, so the brand is not lost by dropping it here. `absolute` is how a page
+ * opts out of the parent template.
+ */
+export function browserTitle(title: string, name: string): Metadata['title'] {
+  return `${title} — ${name}`.length <= TITLE_BUDGET ? title : { absolute: title }
+}
+
+/**
  * Metadata for one public page. `path` is both the canonical and the og:url, and
  * must start with `/` (`'/'` for the home page).
  *
@@ -52,7 +78,7 @@ export async function pageMetadata({
     : seo.default_title || [name, site.tagline].filter(Boolean).join(' — ')
 
   return {
-    ...(title ? { title } : {}),
+    ...(title ? { title: browserTitle(title, name) } : {}),
     description,
     alternates: { canonical: path },
     openGraph: {
@@ -126,6 +152,10 @@ export function organizationJsonLd(settings: AllSettings, base: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    // A stable IRI, so a page elsewhere on the site can point at this exact node
+    // instead of restating it. Without one, every page that needs to name the
+    // publisher has to write its own copy, and copies drift.
+    '@id': `${base}/#organization`,
     name: appName(settings),
     url: base,
     ...(site.logo_url ? { logo: site.logo_url } : {}),
@@ -153,6 +183,7 @@ export function mobileApplicationJsonLd(
   return {
     '@context': 'https://schema.org',
     '@type': 'MobileApplication',
+    '@id': `${publicWebsiteUrl(settings)}/#app`,
     name: appName(settings),
     description: settings.seo.default_description || settings.site.short_description,
     applicationCategory: 'EducationalApplication',
@@ -189,6 +220,7 @@ export function websiteJsonLd(settings: AllSettings, base: string) {
   return {
     '@context': 'https://schema.org',
     '@type': 'WebSite',
+    '@id': `${base}/#website`,
     name: appName(settings),
     url: base,
     inLanguage: 'en-IN',

@@ -48,7 +48,19 @@ export async function generateMetadata(): Promise<Metadata> {
     verification: seo.google_site_verification
       ? { google: seo.google_site_verification }
       : undefined,
-    robots: { index: true, follow: true },
+    /*
+     * No `robots` here. `index, follow` is already the default for a page that
+     * does not say otherwise, and every page that needs something different says
+     * so itself: `/admin` and `/admin/login` are `noindex, nofollow`, and Next.js
+     * emits `<meta name="robots" content="noindex">` automatically on the
+     * not-found route.
+     *
+     * Declaring it here only ever did harm. On a 404 it rendered a second robots
+     * tag reading `index, follow` next to Next's `noindex` — and while a crawler
+     * takes the most restrictive of a conflicting set, shipping a page that asks
+     * to be indexed and not indexed at once is a soft-404 waiting to be read the
+     * wrong way.
+     */
   }
 }
 

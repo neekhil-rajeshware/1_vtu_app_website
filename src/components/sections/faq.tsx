@@ -5,8 +5,14 @@ import { groupFaqs, type Faq, type HomeSection } from '@/lib/content'
 
 /**
  * FAQ list built from <details> elements, so it opens and closes without any
- * JavaScript and stays keyboard accessible. Also emits FAQPage structured data
- * so the questions can appear directly in Google results.
+ * JavaScript and stays keyboard accessible.
+ *
+ * Structured data is opt-in, not automatic. Four pages render this block from
+ * the *same* `web_faqs` rows: the home page shows all of them, and `/features`,
+ * `/contact` and `/vtu-result-dates` each show one category of them. Emitting
+ * on every call site declared the home page's whole question set over again on
+ * three other URLs — a subset of markup already published elsewhere. Only the
+ * page that owns the complete set should claim it.
  */
 export function FaqSection({
   section,
@@ -14,6 +20,7 @@ export function FaqSection({
   grouped = false,
   showHeading = true,
   heading,
+  emitJsonLd = false,
 }: {
   section?: HomeSection
   faqs: Faq[]
@@ -24,6 +31,12 @@ export function FaqSection({
    * want the block named — the per-feature pages, which draw their own header.
    */
   heading?: string
+  /**
+   * Emit `FAQPage` for these `faqs`. True only where the set is this URL's own
+   * — the home page (every global question) and a feature page (its own scoped
+   * questions, which appear nowhere else).
+   */
+  emitJsonLd?: boolean
 }) {
   if (faqs.length === 0) return null
 
@@ -94,7 +107,7 @@ export function FaqSection({
         </div>
       </Container>
 
-      <JsonLd data={jsonLd} />
+      {emitJsonLd ? <JsonLd data={jsonLd} /> : null}
     </Section>
   )
 }
