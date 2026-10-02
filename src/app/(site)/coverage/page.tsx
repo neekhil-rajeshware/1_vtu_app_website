@@ -214,12 +214,12 @@ export default async function CoveragePage() {
             <StatTile
               label="Question paper links"
               value={pyq.filled}
-              detail="Across 20 exam sessions, 2018 to 2027"
+              detail={`Across ${pyq.sessions} exam sessions, from 2018`}
             />
             <StatTile
               label="GATE papers, keys and solutions"
               value={gate.filled}
-              detail={`Across ${gate.years} years, 2007 to 2026`}
+              detail={`Across ${gate.years} years, 2007 onwards`}
             />
             <StatTile
               label="Colleges on file"
@@ -302,7 +302,8 @@ export default async function CoveragePage() {
               {emptySchemes.length > 0 ? (
                 <div>
                   <h3 className="text-base font-bold text-foreground">
-                    {emptySchemes.length} of {catalogue.schemes_total} schemes are empty
+                    {emptySchemes.length} of {catalogue.schemes_total} schemes{' '}
+                    {emptySchemes.length === 1 ? 'is' : 'are'} empty
                   </h3>
                   <p className="mt-2">
                     The subject list is built for{' '}
