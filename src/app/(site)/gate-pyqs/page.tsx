@@ -32,7 +32,7 @@ import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 
 export async function generateMetadata(): Promise<Metadata> {
   const index = await getGateIndex()
-  if (!index || index.papers.length === 0) {
+  if (index.papers.length === 0) {
     return {
       title: 'GATE previous year papers',
       robots: { index: false, follow: true },
@@ -53,7 +53,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function GatePyqsPage() {
   const [index, settings] = await Promise.all([getGateIndex(), getSettings()])
-  if (!index || index.papers.length === 0) notFound()
+  if (index.papers.length === 0) notFound()
 
   const base = publicWebsiteUrl(settings)
   const { totals } = index

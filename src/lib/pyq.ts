@@ -10,8 +10,13 @@ import { createClient } from '@/lib/supabase/server'
  * paper referenced once per stream — and shipping 20 raw text columns per row
  * to the client would be waste.
  *
- * Both return `null` on error rather than throwing, matching `getCoverage()`,
- * so a route renders a 404 instead of a 500.
+ * Both throw on a failed read rather than returning `null`. `getCoverage()`
+ * returns null and `/coverage` renders an "unavailable" state, which is right
+ * for a page whose whole content is the live count — it can still tell the
+ * reader to try again. These two pages have nothing to say without their rows,
+ * and a `null` here sent them to `notFound()`: a 404 tells a crawler the URL is
+ * gone for good, so a database blip would drop the page from the index. A
+ * thrown error renders a 500 instead, which is the failure a crawler retries.
  */
 
 export type GateAsset = {
@@ -64,7 +69,14 @@ export type GateIndex = {
 export type VtuPaper = {
   subject_code: string
   subject_name: string
-  /** The resolved subject's own stream, not the sum of the rows that cited it. */
+  /**
+   * Every stream the subject is listed under, comma-separated — `EEE` for most,
+   * `CSE, ECE, EEE, ME` for a first-year subject several streams share.
+   *
+   * The set, not one member of it. `subjects` holds one row per stream, and the
+   * first cut of `vtu_pyq_index()` resolved them with `limit 1` and no ORDER BY:
+   * 1BESC104A is listed under CSE, ECE, EEE and ME, and the page printed "EEE".
+   */
   streams: string
   /** One or more sittings, e.g. `Dec 2025 – Jan 2026, June – July 2026`. */
   sessions: string
@@ -89,20 +101,22 @@ export type VtuIndex = {
   }
 }
 
-export const getGateIndex = cache(async (): Promise<GateIndex | null> => {
+export const getGateIndex = cache(async (): Promise<GateIndex> => {
   const supabase = await createClient()
 
   const { data, error } = await supabase.rpc('gate_pyq_index')
-  if (error || !data) return null
+  if (error) throw new Error(`gate_pyq_index failed: ${error.message}`)
+  if (!data) throw new Error('gate_pyq_index returned no payload')
 
   return data as GateIndex
 })
 
-export const getVtuIndex = cache(async (): Promise<VtuIndex | null> => {
+export const getVtuIndex = cache(async (): Promise<VtuIndex> => {
   const supabase = await createClient()
 
   const { data, error } = await supabase.rpc('vtu_pyq_index')
-  if (error || !data) return null
+  if (error) throw new Error(`vtu_pyq_index failed: ${error.message}`)
+  if (!data) throw new Error('vtu_pyq_index returned no payload')
 
   return data as VtuIndex
 })

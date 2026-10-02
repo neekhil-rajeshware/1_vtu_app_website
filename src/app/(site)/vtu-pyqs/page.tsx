@@ -43,7 +43,7 @@ const REQUEST_SUBJECT = 'Missing question paper or syllabus'
 
 export async function generateMetadata(): Promise<Metadata> {
   const index = await getVtuIndex()
-  if (!index || index.papers.length === 0) {
+  if (index.papers.length === 0) {
     return {
       title: 'VTU first-year question papers',
       robots: { index: false, follow: true },
@@ -63,7 +63,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function VtuPyqsPage() {
   const [index, settings] = await Promise.all([getVtuIndex(), getSettings()])
-  if (!index || index.papers.length === 0) notFound()
+  if (index.papers.length === 0) notFound()
 
   const base = publicWebsiteUrl(settings)
   const { totals } = index
