@@ -12,6 +12,16 @@ const STATIC_ROUTES: Array<{
   { path: '/screenshots', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/download', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/coverage', priority: 0.8, changeFrequency: 'weekly' },
+  // The two question-paper hubs. Highest-priority content on the site: they are
+  // the pages someone searching "GATE CS previous year papers" can actually
+  // use, and every PDF is linked directly with no install wall.
+  //
+  // The 52 per-paper pages under /gate-pyqs/<slug> are deliberately NOT listed
+  // yet. They do not exist until Phase 2, and a sitemap full of 404s is worse
+  // than a short sitemap — Google spends crawl budget on them and learns to
+  // distrust the file. They join here in the commit that creates them.
+  { path: '/gate-pyqs', priority: 0.9, changeFrequency: 'weekly' },
+  { path: '/vtu-pyqs', priority: 0.9, changeFrequency: 'weekly' },
   { path: '/setup', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/about', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/contact', priority: 0.6, changeFrequency: 'monthly' },
