@@ -50,7 +50,9 @@ export type GateIndex = {
 export type VtuPaper = {
   subject_code: string
   subject_name: string
+  /** The resolved subject's own stream, not the sum of the rows that cited it. */
   streams: string
+  /** One or more sittings, e.g. `Dec 2025 – Jan 2026, June – July 2026`. */
   sessions: string
   url: string
 }
@@ -58,7 +60,14 @@ export type VtuPaper = {
 export type VtuIndex = {
   papers: VtuPaper[]
   totals: {
-    /** Distinct PDFs, not filled cells. 170 on 2026-10-02. */
+    /**
+     * Distinct documents, not filled cells and not rows.
+     *
+     * 59 on 2026-10-02. An earlier version of the RPC counted rows and said
+     * 170: one subject per stream held the same files, and those files carried
+     * browser duplicate-download suffixes. If this number jumps, suspect the
+     * cell-shape handling before believing the collection grew.
+     */
     papers: number
     subjects: number
     sessions: number

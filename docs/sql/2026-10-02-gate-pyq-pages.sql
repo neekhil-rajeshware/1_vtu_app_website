@@ -328,3 +328,156 @@ $function$;
 
 revoke all on function public.vtu_pyq_index() from public;
 grant execute on function public.vtu_pyq_index() to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 4. vtu_pyq_index() — resolve the subject from the file, not the row
+-- ---------------------------------------------------------------------------
+--
+-- Section 3 above reported 170 papers. It was counting rows, and the rows are
+-- not papers. Measured 2026-10-02:
+--
+--   * Computer-Aided Engineering Drawing is one subject `subjects` lists once
+--     per stream (1BCEDS103 CSE, 1BCEDC103 CV, 1BCEDEC103 ECE, 1BCEDE103 EEE,
+--     1BCEDM103 ME). All five py_qp rows hold the same three file codes —
+--     1BCEDS103, 1BCEDS203, 1BCEDE203 — so four of the five were serving
+--     another stream's paper, and the subject was listed five times.
+--   * Those files carry browser duplicate-download suffixes: the drawing block
+--     is `1BCEDS103 - January-2026`, `1BCEDS203 - June-2026` and
+--     `1BCEDE203 - June-2026` with `(1)`…`(75)` appended. 115 of the 170 rows
+--     were 3 documents.
+--
+-- So the subject is taken from the code in the *file*, falling back to the
+-- row's own code only when the filename carries none. The file is the ground
+-- truth for what a paper is; the cell it was pasted into is not. Duplicate
+-- suffixes are then stripped and one URL is kept per document.
+--
+-- The other 35 subjects are untouched by this: they have no duplicate suffixes
+-- and their filenames already agree with their row (53 exactly, 25 via the
+-- sibling semester code, which resolves to the same subject).
+--
+-- Counts after this change: 58 papers, 33 subjects, 2 sessions, 1 scheme.
+--
+-- `streams` now comes from the resolved subject row rather than from the
+-- contributing py_qp rows, which is what stops the drawing subject advertising
+-- five streams it does not have.
+
+create or replace function public.vtu_pyq_index()
+returns jsonb
+language sql
+stable
+set search_path = public
+as $function$
+with cell as (
+  select coalesce(p.scheme_code, '')                 as scheme_code,
+         coalesce(p.sem_1_sub_code, p.sem_2_sub_code) as row_code,
+         e.key                                       as session_col,
+         item.value                                  as item
+  from py_qp p
+  cross join lateral jsonb_each_text(
+    to_jsonb(p) - 'id' - 'created_at' - 'updated_at'
+  ) e
+  cross join lateral jsonb_array_elements(
+    case when jsonb_typeof((e.value::jsonb) -> 'Paper') = 'array'
+         then (e.value::jsonb) -> 'Paper'
+         else jsonb_build_array((e.value::jsonb) -> 'Paper') end
+  ) item(value)
+  where e.value is not null and e.value <> ''
+    and e.key ~ '^(dec_jan|june_july)_[0-9]{4}$'
+    and (e.value::jsonb) ? 'Paper'
+),
+-- Both cell shapes again, and this is the step that silently loses papers if it
+-- is got wrong: `item ->> 'url'` returns NULL when the item is a bare URL
+-- string rather than an object, dropping every such cell with no error. A first
+-- cut of this function did exactly that and reported 16 papers instead of 58.
+resolved as (
+  select scheme_code, row_code, session_col,
+         case when jsonb_typeof(item) = 'object' then item ->> 'url'
+              else item #>> '{}' end as url
+  from cell
+),
+doc as (
+  select distinct scheme_code, row_code, session_col, url,
+         replace(replace(
+           split_part(url, '/', array_length(string_to_array(url, '/'), 1)),
+           '%20', ' '), '%26', '&') as file
+  from resolved
+  where url is not null and url <> '' and row_code is not null
+),
+keyed as (
+  select d.*,
+         substring(d.file from '^([0-9A-Za-z]+)')                     as file_code,
+         regexp_replace(d.file, '\s*\([0-9]+\)\.pdf$', '.pdf')        as base_file
+  from doc d
+),
+-- Resolve to a `subjects` row, preferring the code in the filename. The second
+-- lateral is the fallback for a file that carries no usable code.
+named as (
+  select k.scheme_code, k.row_code, k.session_col, k.base_file, k.url,
+         coalesce(s.sub_name,
+                  (select su.sub_name from subjects su
+                    where su.scheme_code = k.scheme_code
+                      and (su.sem_1_sub_code = k.row_code
+                           or su.sem_2_sub_code = k.row_code)
+                    limit 1),
+                  k.row_code)                                          as sub_name,
+         coalesce(s.sub_code,
+                  (select coalesce(su.sem_1_sub_code, su.sem_2_sub_code)
+                     from subjects su
+                    where su.scheme_code = k.scheme_code
+                      and (su.sem_1_sub_code = k.row_code
+                           or su.sem_2_sub_code = k.row_code)
+                    limit 1),
+                  k.row_code)                                          as sub_code,
+         s.sub_stream
+  from keyed k
+  left join lateral (
+    select su.sub_name,
+           coalesce(su.sem_1_sub_code, su.sem_2_sub_code) as sub_code,
+           su.stream                                      as sub_stream
+    from subjects su
+    where su.scheme_code = k.scheme_code
+      and (su.sem_1_sub_code = k.file_code or su.sem_2_sub_code = k.file_code)
+    limit 1
+  ) s on true
+),
+-- "dec_jan_2026" is the Dec 2025 / Jan 2026 sitting, so the year in the column
+-- name is the January one. Derived, so a 21st column needs no change here.
+label as (
+  select n.*,
+         case when n.session_col like 'dec_jan_%'
+              then 'Dec ' || (right(n.session_col, 4)::int - 1)
+                   || ' – Jan ' || right(n.session_col, 4)
+              else 'June – July ' || right(n.session_col, 4) end as session_label
+  from named n
+),
+pap as (
+  select sub_code,
+         sub_name,
+         base_file,
+         min(url)                                          as url,
+         coalesce(min(sub_stream), 'All branches')         as streams,
+         string_agg(distinct session_label, ', '
+                    order by session_label)                as sessions
+  from label
+  group by sub_code, sub_name, base_file
+)
+select jsonb_build_object(
+  'papers', coalesce(jsonb_agg(jsonb_build_object(
+      'subject_code', sub_code,
+      'subject_name', sub_name,
+      'streams',      streams,
+      'sessions',     sessions,
+      'url',          url
+    ) order by sub_name), '[]'::jsonb),
+  'totals', jsonb_build_object(
+    'papers',   (select count(*)::int from pap),
+    'subjects', (select count(distinct sub_code)::int from pap),
+    'sessions', (select count(distinct session_col)::int from label),
+    'schemes',  (select count(distinct scheme_code)::int from label)
+  )
+)
+from pap;
+$function$;
+
+revoke all on function public.vtu_pyq_index() from public;
+grant execute on function public.vtu_pyq_index() to anon, authenticated;
