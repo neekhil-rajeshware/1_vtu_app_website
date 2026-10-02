@@ -36,7 +36,8 @@ These were read from `kzwykhjalncwyrmcmwsc` while writing this plan. They **corr
 | GATE cell keys | **`Paper`, `Answer Key` only** | **there is no `Solved` key anywhere in the table** |
 | GATE cell value shape | string **or** array of `{url, label}` | 2024+ uses the array form with `Session 1` / `Session 2` |
 | `py_qp` filled cells | 69 | across 2 sessions |
-| `py_qp` **distinct PDFs** | **56** | 36 distinct subject codes, 20 of them sitting in both sessions |
+| `py_qp` **distinct PDFs** | **170** | 36 distinct subject codes; cells hold `[{url}]` as often as a bare string |
+| `py_qp` cell value shape | string **or** array of `{url}` | **127 of 183 items are the array form** — `1BKBK109`'s January sitting alone has sets A/B/C/D |
 | `py_qp` subject code | `coalesce(sem_1_sub_code, sem_2_sub_code)` | already a column — no need to parse the filename |
 | `subjects` join key | `sem_1_sub_code` / `sem_2_sub_code` → `sub_name` | the column is **not** `subject_code` |
 
@@ -44,7 +45,7 @@ These were read from `kzwykhjalncwyrmcmwsc` while writing this plan. They **corr
 
 1. **The site currently claims something the data does not have.** `/coverage` renders the tile `label="GATE papers, keys and solutions"` from `src/app/(site)/coverage/page.tsx:220`, and the spec's asset list says *Question paper · Answer key · Solved paper*. There are **zero solved papers**. Task 7 fixes the tile; the pages must never promise one.
 2. **887 is filled cells, not documents.** The GATE hub's headline is **1,776 papers and answer keys** — derived from the RPC, not typed.
-3. **The VTU page lists 56 papers, not 32.** 56 distinct PDFs, 36 distinct subject codes.
+3. **The VTU page lists 170 papers, not 32.** 170 distinct PDFs, 36 distinct subject codes, and 127 of 183 cell items are the array shape — so extracting with `->> 'Paper'` reports 56 and drops the rest silently.
 
 ## Review Focus
 
@@ -436,22 +437,28 @@ Shape:
     "sessions": "Dec 2025 – Jan 2026",
     "url": "https://…/1BMATC101%20-%20January-2026.pdf"
   }],
-  "totals": { "papers": 56, "subjects": 36, "sessions": 2, "schemes": 1 }
+  "totals": { "papers": 170, "subjects": 36, "sessions": 2, "schemes": 1 }
 }
 ```
 
 The subject code is `coalesce(py_qp.sem_1_sub_code, py_qp.sem_2_sub_code)` — already a column, so the filename never has to be parsed. The display name joins `subjects` on the same two codes (`subjects.subject_code` does **not** exist; the columns are `sem_1_sub_code` / `sem_2_sub_code` / `sub_name`), and where nothing resolves the code is shown as-is rather than the row being dropped.
 
-One row per **distinct PDF**, not per `py_qp` row: the same file is referenced once per stream, so 69 filled cells are 56 papers.
+One row per **distinct PDF**, not per `py_qp` row: the same file is referenced once per stream, so 69 filled cells are 170 papers.
 
 - [ ] **Step 1: Write the function SQL**
 
 ```sql
 -- vtu_pyq_index() — the VTU first-year question papers, honestly counted.
 --
--- py_qp has 20 named session columns holding {"Paper": url}. The same PDF is
--- referenced once per stream, so cells outnumber files: 69 filled cells are 56
--- distinct papers. Counting cells would overstate the collection by 23%.
+-- COPY THIS FROM docs/sql/2026-10-02-gate-pyq-pages.sql, NOT FROM HERE. The
+-- sketch below was written before the cell shapes were measured and extracts
+-- with `->> 'Paper'`, which returns NULL on the array-shaped cells and silently
+-- reports 56 papers against 170.
+--
+-- py_qp has 20 named session columns holding {"Paper": …}. Two shapes are live:
+-- 56 cells hold a bare URL string, 127 hold [{url}] — 1BKBK109's January sitting
+-- alone has four question-paper sets. The same PDF is also referenced once per
+-- stream, so 69 filled cells are 170 distinct papers.
 --
 -- A subject code that resolves to no `subjects` row keeps the code as its name
 -- rather than vanishing -- a paper can outlive its catalogue row.
@@ -539,9 +546,11 @@ grant execute on function public.vtu_pyq_index() to anon, authenticated;
 select (public.vtu_pyq_index() -> 'totals') as totals;
 ```
 
-Expected: `{"papers": 56, "subjects": 36, "sessions": 2, "schemes": 1}`.
+Expected: `{"papers": 170, "subjects": 36, "sessions": 2, "schemes": 1}`.
 
-If `papers` comes back 69, the grouping is per cell rather than per `(sub_code, url)`; if it comes back 36, the `url` was dropped from the `group by`.
+If `papers` comes back 69, the grouping is per cell rather than per `(sub_code, url)`. If it comes back **56**, the `cell` CTE is extracting with `->> 'Paper'` and dropping every array-shaped cell — that is the exact bug this task was written to avoid, and it fails silently.
+
+> **The authoritative SQL for this function is `docs/sql/2026-10-02-gate-pyq-pages.sql`**, not the sketch below — the sketch was written before the array shape was measured and extracts with `->> 'Paper'`. Apply what is in the file.
 
 - [ ] **Step 4: Assert no paper lost its subject name**
 
@@ -582,7 +591,7 @@ Add vtu_pyq_index()
 
 Groups py_qp by (subject code, PDF) rather than by cell. The same file is
 referenced once per stream, so counting cells would have advertised 69
-papers where there are 56.
+papers where there are 170.
 
 The subject code comes from the row's own sem_1_sub_code/sem_2_sub_code
 columns, so nothing parses the filename, and a code with no `subjects` row
@@ -952,7 +961,7 @@ export default async function VtuPyqsPage() {
   const streams = [...new Set(index.papers.flatMap((p) => p.streams.split(', ')))].sort()
 
   // Grouped by subject so a student scans their own subject once rather than
-  // hunting a code in a flat list of 56.
+  // hunting a code in a flat list of 170.
   const bySubject = new Map<string, VtuPaper[]>()
   for (const paper of index.papers) {
     const list = bySubject.get(paper.subject_name) ?? []
@@ -1327,12 +1336,12 @@ Expected: **52** distinct links; `1,776 PDFs`; `2007–2026`. Note the en dash i
 ```bash
 curl -s https://onevtu.in/vtu-pyqs | sed 's/<!-- -->//g' > /tmp/vtu.html
 grep -o '<title>[^<]*</title>' /tmp/vtu.html
-grep -o '56 papers across 36 subjects' /tmp/vtu.html | head -1
+grep -o '170 papers across 36 subjects' /tmp/vtu.html | head -1
 grep -o 'first year' /tmp/vtu.html | head -1
 grep -c 'r2.dev' /tmp/vtu.html
 ```
 
-Expected: the `<title>` names the 2025 scheme and first year; `56 papers across 36 subjects`; `first year` present; **56** `r2.dev` links.
+Expected: the `<title>` names the 2025 scheme and first year; `170 papers across 36 subjects`; `first year` present; **170** `r2.dev` links.
 
 - [ ] **Step 4: Every linked PDF actually returns bytes**
 
@@ -1411,7 +1420,7 @@ The page itself is `src/app/(site)/gate-pyqs/[slug]/page.tsx` following `feature
 
 1. **`Solved` does not exist.** The spec's asset list is *Question paper · Answer key · Solved paper*, and `/coverage` ships `label="GATE papers, keys and solutions"`. Every cell in `gatepyqs` holds `Paper` and `Answer Key` and nothing else. The RPC has no `solved` key and Task 7 fixes the live label.
 2. **`documents` is 1,776, not 887.** 887 is filled cells; a 2024+ cell holds two sessions. The hub's headline uses the document count.
-3. **The VTU page lists 56 papers, not 32.** 69 filled cells → 56 distinct PDFs → 36 distinct subject codes. The spec's 32 matches none of these.
+3. **The VTU page lists 170 papers, not 32.** 69 filled cells → 170 distinct PDFs → 36 distinct subject codes. The spec's 32 matches none of these. The 56 in an earlier draft of this plan was itself wrong: it came from extracting with `->> 'Paper'`, which returns NULL on the array-shaped cells and silently discarded 127 of them. Two wrong numbers agreed with each other — the trap this plan's Review Focus #2 warns about, walked into while writing it.
 4. **The subject code is a column, not a filename.** The spec says the code is "the leading token of the PDF filename"; `py_qp.sem_1_sub_code` already holds it, so nothing parses a URL.
 5. **The join column is `subjects.sem_1_sub_code` / `sub_name`** — there is no `subjects.subject_code`.
 

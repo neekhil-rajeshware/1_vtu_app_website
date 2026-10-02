@@ -218,3 +218,113 @@ $function$;
 
 revoke all on function public.gate_pyq_index() from public;
 grant execute on function public.gate_pyq_index() to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 3. vtu_pyq_index()
+-- ---------------------------------------------------------------------------
+--
+-- The VTU first-year question papers, honestly counted.
+--
+-- py_qp has 20 named session columns holding {"Paper": url}. Two shapes are
+-- live here too, and the array one is the majority: 56 cells hold a bare URL
+-- string and 127 hold [{url}] — 1BKBK109's January sitting alone has four
+-- question-paper sets (A/B/C/D). Extracting with ->> 'Paper' returns NULL on an
+-- array, which silently discards all 127 and reports 56 papers against 170.
+--
+-- The same PDF is also referenced once per stream, so cells outnumber files:
+-- 69 filled cells are 170 distinct papers.
+--
+-- The subject code is coalesce(sem_1_sub_code, sem_2_sub_code) — already a
+-- column, so nothing parses the filename — and a code that resolves to no
+-- `subjects` row keeps the code as its display name rather than vanishing. A
+-- paper can outlive its catalogue row.
+--
+-- Note `subjects` has no `subject_code` column; the join is on its own
+-- sem_1_sub_code / sem_2_sub_code pair, and the name is `sub_name`.
+
+create or replace function public.vtu_pyq_index()
+returns jsonb
+language sql
+stable
+set search_path = public
+as $function$
+with cell as (
+  select coalesce(p.scheme_code, '')                 as scheme_code,
+         coalesce(p.sem_1_sub_code, p.sem_2_sub_code) as sub_code,
+         p.stream,
+         e.key                                       as session_col,
+         a.v                                         as item
+  from py_qp p
+  cross join lateral jsonb_each_text(
+    to_jsonb(p) - 'id' - 'created_at' - 'updated_at'
+  ) e
+  cross join lateral (
+    select jsonb_array_elements(
+      case when jsonb_typeof((e.value::jsonb) -> 'Paper') = 'array'
+           then (e.value::jsonb) -> 'Paper'
+           else jsonb_build_array((e.value::jsonb) -> 'Paper') end
+    )
+  ) as a(v)
+  where e.value is not null and e.value <> ''
+    and e.key ~ '^(dec_jan|june_july)_[0-9]{4}$'
+    and (e.value::jsonb) ? 'Paper'
+),
+doc as (
+  select distinct scheme_code, sub_code, session_col, stream,
+         case when jsonb_typeof(item) = 'object' then item ->> 'url'
+              else item #>> '{}' end as url
+  from cell
+),
+paper as (
+  select * from doc where url is not null and url <> '' and sub_code is not null
+),
+named as (
+  select p.*,
+         coalesce(
+           (select min(s.sub_name) from subjects s
+             where s.scheme_code = p.scheme_code
+               and (s.sem_1_sub_code = p.sub_code or s.sem_2_sub_code = p.sub_code)),
+           p.sub_code
+         ) as sub_name
+  from paper p
+),
+-- "dec_jan_2026" is the Dec 2025 / Jan 2026 sitting, so the year in the column
+-- name is the January one. Derived rather than listed, so a 21st session column
+-- needs no change here.
+label as (
+  select n.*,
+         case when n.session_col like 'dec_jan_%'
+              then 'Dec ' || (right(n.session_col, 4)::int - 1) || ' – Jan ' || right(n.session_col, 4)
+              else 'June – July ' || right(n.session_col, 4) end as session_label
+  from named n
+),
+pap as (
+  select sub_code,
+         sub_name,
+         url,
+         string_agg(distinct stream, ', ' order by stream)     as streams,
+         string_agg(distinct session_label, ', '
+                    order by session_label)                    as sessions
+  from label
+  group by sub_code, sub_name, url
+)
+select jsonb_build_object(
+  'papers', coalesce(jsonb_agg(jsonb_build_object(
+      'subject_code', sub_code,
+      'subject_name', sub_name,
+      'streams',      coalesce(streams, 'All branches'),
+      'sessions',     sessions,
+      'url',          url
+    ) order by sub_name), '[]'::jsonb),
+  'totals', jsonb_build_object(
+    'papers',   (select count(*)::int from pap),
+    'subjects', (select count(distinct sub_code)::int from pap),
+    'sessions', (select count(distinct session_col)::int from paper),
+    'schemes',  (select count(distinct scheme_code)::int from paper)
+  )
+)
+from pap;
+$function$;
+
+revoke all on function public.vtu_pyq_index() from public;
+grant execute on function public.vtu_pyq_index() to anon, authenticated;
