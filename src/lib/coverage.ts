@@ -73,10 +73,23 @@ export type CoverageSnapshot = {
     rows: number
     sessions: number
     slots: number
+    /** Filled *cells* — one subject-session slot that holds anything. */
     filled: number
+    /** Distinct PDFs, which is a different number in both directions: a cell
+     *  can hold four question-paper sets, and one paper is cited once per
+     *  stream. This is what `/vtu-pyqs` lists. */
+    documents: number
     by_stream: Array<{ stream: string; filled: number }>
   }
-  gate: { rows: number; years: number; slots: number; filled: number }
+  gate: {
+    rows: number
+    years: number
+    slots: number
+    /** Filled cells. 887 against 1,776 documents, because 2024+ cells hold two
+     *  sittings each. This is what `/gate-pyqs` lists. */
+    filled: number
+    documents: number
+  }
   library: CoverageLibraryItem[]
 }
 
@@ -133,11 +146,15 @@ export async function coverageMetrics(): Promise<Record<string, string>> {
 
   return {
     ...(formulas ? { formulas: n(formulas.count) } : {}),
-    gate_papers: n(gate.filled),
+    // Documents, not cells: the strip sits a few scrolls above `/coverage`,
+    // whose tiles link to `/gate-pyqs` and `/vtu-pyqs`, and those pages print
+    // these numbers. Cell counts here would contradict pages the reader can
+    // reach in one click.
+    gate_papers: n(gate.documents),
     syllabuses: n(catalogue.with_syllabus),
     branches_covered: n(catalogue.branches_covered),
     colleges: n(catalogue.colleges),
-    pyq_papers: n(pyq.filled),
+    pyq_papers: n(pyq.documents),
   }
 }
 

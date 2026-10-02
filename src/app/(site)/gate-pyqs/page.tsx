@@ -137,11 +137,14 @@ export default async function GatePyqsPage() {
             >
               What else the app covers →
             </Link>
+            {/* "Previous Year Papers" is the feature these pages serve, but its
+                slug is NULL so it has no landing page — `/features/<NULL>` is a
+                404. GATE Question Papers does have one and is the honest link. */}
             <Link
-              href="/features/previous-year-papers"
+              href="/features/gate-question-papers"
               className="text-sm font-medium text-brand hover:underline"
             >
-              Previous year papers in the app →
+              GATE Question Papers in the app →
             </Link>
           </div>
         </Container>

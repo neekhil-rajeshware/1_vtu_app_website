@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 /**
  * The figures on `/coverage`.
  *
@@ -19,18 +21,25 @@ const n = (value: number) => value.toLocaleString('en-IN')
  * One number, standing alone. A stat tile rather than a one-bar chart — a
  * single value has nothing to compare against, so a plot would add ink and no
  * information.
+ *
+ * `href` is for the tiles whose number is a list somewhere. A tile that says
+ * "59" and links to a page that says "59" is the same claim twice; a tile that
+ * says one number and links to a page showing another is worse than no link,
+ * so the caller reads both from one source.
  */
 export function StatTile({
   label,
   value,
   detail,
+  href,
 }: {
   label: string
   value: string | number
   detail?: string
+  href?: string
 }) {
-  return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+  const inner = (
+    <>
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       {/* Proportional figures: `tabular-nums` is for columns, and makes a
           standalone number like 191 look loosely spaced at this size. */}
@@ -40,7 +49,21 @@ export function StatTile({
       {detail ? (
         <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{detail}</p>
       ) : null}
-    </div>
+    </>
+  )
+
+  const shell = 'rounded-2xl border border-border bg-card p-5'
+
+  if (!href) return <div className={shell}>{inner}</div>
+
+  return (
+    <Link
+      href={href}
+      className={`group block ${shell} transition-colors hover:border-brand focus-visible:border-brand focus-visible:outline-none`}
+    >
+      {inner}
+      <p className="mt-2 text-xs font-medium text-brand">See the list →</p>
+    </Link>
   )
 }
 

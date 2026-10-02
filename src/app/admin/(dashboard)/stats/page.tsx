@@ -62,11 +62,11 @@ export default function AdminStatsPage() {
             options: [
               { value: '', label: 'Typed by hand' },
               { value: 'formulas', label: 'Formulas in the library' },
-              { value: 'gate_papers', label: 'GATE papers, keys and solutions' },
+              { value: 'gate_papers', label: 'GATE papers and answer keys' },
               { value: 'syllabuses', label: 'Syllabus PDFs on file' },
               { value: 'branches_covered', label: 'Branches with subjects' },
               { value: 'colleges', label: 'Colleges on file' },
-              { value: 'pyq_papers', label: 'Previous-year paper links' },
+              { value: 'pyq_papers', label: 'VTU question paper PDFs' },
             ],
           },
           {

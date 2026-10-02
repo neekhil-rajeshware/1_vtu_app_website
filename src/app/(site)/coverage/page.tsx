@@ -211,15 +211,19 @@ export default async function CoveragePage() {
               value={`${catalogue.branches_covered} of ${catalogue.branches_total}`}
               detail={`${missingBranches} branches have no subject list yet`}
             />
+            {/* Documents, not cells. The tile and the page it links to read the
+                same field, so they cannot drift apart. */}
             <StatTile
-              label="Question paper links"
-              value={pyq.filled}
-              detail={`Across ${pyq.sessions} exam sessions, from 2018`}
+              label="VTU question paper PDFs"
+              value={pyq.documents}
+              detail="First year so far — every link on that list is a distinct document"
+              href="/vtu-pyqs"
             />
             <StatTile
-              label="GATE papers, keys and solutions"
-              value={gate.filled}
-              detail={`Across ${gate.years} years, 2007 onwards`}
+              label="GATE papers and answer keys"
+              value={gate.documents}
+              detail="Question papers and answer keys, across every GATE branch"
+              href="/gate-pyqs"
             />
             <StatTile
               label="Colleges on file"
@@ -260,13 +264,13 @@ export default async function CoveragePage() {
                 label="Previous-year paper slots filled"
                 filled={pyq.filled}
                 total={pyq.slots}
-                note={`${n(pyq.filled)} links on file. The ${n(pyq.slots)} is every subject against all ${pyq.sessions} sessions — room we have, not papers we owe.`}
+                note={`${n(pyq.filled)} slots carry a paper. The ${n(pyq.slots)} is every subject against all ${pyq.sessions} session columns — room we have, not papers we owe.`}
               />
               <CoverageMeter
                 label="GATE slots filled"
                 filled={gate.filled}
                 total={gate.slots}
-                note={`Papers, answer keys or solutions for ${n(gate.filled)} of ${n(gate.slots)} subject-year combinations.`}
+                note={`A paper or answer key in ${n(gate.filled)} of ${n(gate.slots)} subject-year combinations. There are more PDFs than slots — the ${n(gate.documents)} above — because a recent year can hold two sittings.`}
               />
             </div>
 
