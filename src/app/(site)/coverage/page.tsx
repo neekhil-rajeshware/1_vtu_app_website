@@ -212,16 +212,18 @@ export default async function CoveragePage() {
               detail={`${missingBranches} branches have no subject list yet`}
             />
             {/* Documents, not cells. The tile and the page it links to read the
-                same field, so they cannot drift apart. */}
+                same field, so they cannot drift apart. An em dash rather than a
+                count when the index behind it failed: "unknown" is true and
+                "0" is not. */}
             <StatTile
               label="VTU question paper PDFs"
-              value={pyq.documents}
+              value={pyq.documents ?? '—'}
               detail="First year so far — every link on that list is a distinct document"
               href="/vtu-pyqs"
             />
             <StatTile
               label="GATE papers and answer keys"
-              value={gate.documents}
+              value={gate.documents ?? '—'}
               detail="Question papers and answer keys, across every GATE branch"
               href="/gate-pyqs"
             />
@@ -270,7 +272,12 @@ export default async function CoveragePage() {
                 label="GATE slots filled"
                 filled={gate.filled}
                 total={gate.slots}
-                note={`A paper or answer key in ${n(gate.filled)} of ${n(gate.slots)} subject-year combinations. There are more PDFs than slots — the ${n(gate.documents)} above — because a recent year can hold two sittings.`}
+                note={
+                  `A paper or answer key in ${n(gate.filled)} of ${n(gate.slots)} subject-year combinations.` +
+                  (gate.documents === null
+                    ? ' The number of distinct PDFs is unavailable right now.'
+                    : ` There are more PDFs than slots — the ${n(gate.documents)} above — because a recent year can hold two sittings.`)
+                }
               />
             </div>
 

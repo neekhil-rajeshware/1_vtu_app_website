@@ -77,8 +77,12 @@ export type CoverageSnapshot = {
     filled: number
     /** Distinct PDFs, which is a different number in both directions: a cell
      *  can hold four question-paper sets, and one paper is cited once per
-     *  stream. This is what `/vtu-pyqs` lists. */
-    documents: number
+     *  stream. This is what `/vtu-pyqs` lists.
+     *
+     *  `null` when the index function behind it failed to run. Unknown, not
+     *  zero — a 0 here would print "0 question paper PDFs" on a page whose
+     *  whole purpose is an honest count. */
+    documents: number | null
     by_stream: Array<{ stream: string; filled: number }>
   }
   gate: {
@@ -88,7 +92,8 @@ export type CoverageSnapshot = {
     /** Filled cells. 887 against 1,776 documents, because 2024+ cells hold two
      *  sittings each. This is what `/gate-pyqs` lists. */
     filled: number
-    documents: number
+    /** `null` when the index function failed to run — see `pyq.documents`. */
+    documents: number | null
   }
   library: CoverageLibraryItem[]
 }
@@ -150,11 +155,15 @@ export async function coverageMetrics(): Promise<Record<string, string>> {
     // whose tiles link to `/gate-pyqs` and `/vtu-pyqs`, and those pages print
     // these numbers. Cell counts here would contradict pages the reader can
     // reach in one click.
-    gate_papers: n(gate.documents),
+    //
+    // Omitted, not zeroed, when the index behind the count failed to run: an
+    // absent key leaves the admin-typed value in the strip, where a 0 would be
+    // a number the database never said.
+    ...(gate.documents === null ? {} : { gate_papers: n(gate.documents) }),
     syllabuses: n(catalogue.with_syllabus),
     branches_covered: n(catalogue.branches_covered),
     colleges: n(catalogue.colleges),
-    pyq_papers: n(pyq.documents),
+    ...(pyq.documents === null ? {} : { pyq_papers: n(pyq.documents) }),
   }
 }
 
