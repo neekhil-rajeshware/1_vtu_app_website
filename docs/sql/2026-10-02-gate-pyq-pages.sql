@@ -109,3 +109,112 @@ alter table public.gatepyqs
   alter column slug set not null;
 
 create unique index if not exists gatepyqs_slug_key on public.gatepyqs (slug);
+
+-- ---------------------------------------------------------------------------
+-- 2. gate_pyq_index()
+-- ---------------------------------------------------------------------------
+--
+-- Every GATE paper, its real year span, and its assets.
+--
+-- Two cell shapes have to be handled and both are live: older years store a bare
+-- URL string, 2024+ store [{"url","label"}] because a year can have two
+-- sittings. A parser that handles one shape drops half the papers with no error.
+--
+-- year_from / year_to are derived so a heading can never contradict the list
+-- under it, and totals.documents counts PDFs rather than cells: a 2024 cell
+-- holds two sessions, so counting cells understates the collection badly.
+--
+-- There is deliberately no `solved` key. Every cell in gatepyqs holds `Paper`
+-- and `Answer Key` and nothing else; a field that is always [] is a promise the
+-- site cannot keep. (`/coverage` shipped the words "and solutions" until
+-- 2026-10-02 for exactly this reason.)
+--
+-- Shaped in SQL because the shape knowledge lives here; shipping 20 raw text
+-- columns per row to the client would be waste.
+
+create or replace function public.gate_pyq_index()
+returns jsonb
+language sql
+stable
+set search_path = public
+as $function$
+with cell as (
+  select g.code, g.name, g.slug,
+         e.key::int     as year,
+         e.value::jsonb as j
+  from gatepyqs g
+  cross join lateral jsonb_each_text(
+    to_jsonb(g) - 'code' - 'name' - 'slug' - 'id'
+  ) e
+  where e.value is not null and e.value <> ''
+    and e.key ~ '^[0-9]{4}$'
+),
+asset as (
+  select c.code, c.name, c.slug, c.year, t.k as kind, a.v as item
+  from cell c
+  cross join lateral (values ('Paper'), ('Answer Key')) as t(k)
+  cross join lateral (
+    -- A bare string becomes a one-element array so jsonb_array_elements is
+    -- never inside the CASE: Postgres rejects a set-returning function in a
+    -- CASE branch outright (0A000).
+    select jsonb_array_elements(
+      case when jsonb_typeof(c.j -> t.k) = 'array' then c.j -> t.k
+           else jsonb_build_array(c.j -> t.k) end
+    )
+  ) as a(v)
+  where c.j ? t.k
+),
+doc as (
+  select code, name, slug, year, kind,
+         case when jsonb_typeof(item) = 'object' then item ->> 'url'
+              else item #>> '{}' end as url,
+         case when jsonb_typeof(item) = 'object' then item ->> 'label'
+              else null end          as label
+  from asset
+  where (case when jsonb_typeof(item) = 'object' then item ->> 'url'
+              else item #>> '{}' end) is not null
+),
+yr as (
+  select code, name, slug, year,
+         jsonb_agg(jsonb_build_object('url', url, 'label', label)
+                   order by label nulls first)
+           filter (where kind = 'Paper')      as paper,
+         jsonb_agg(jsonb_build_object('url', url, 'label', label)
+                   order by label nulls first)
+           filter (where kind = 'Answer Key') as answer_key
+  from doc
+  group by code, name, slug, year
+),
+pap as (
+  select code, name, slug,
+         jsonb_agg(jsonb_build_object(
+           'year',       year,
+           'paper',      coalesce(paper, '[]'::jsonb),
+           'answer_key', coalesce(answer_key, '[]'::jsonb)
+         ) order by year desc) as years,
+         min(year) as year_from,
+         max(year) as year_to
+  from yr
+  group by code, name, slug
+)
+select jsonb_build_object(
+  'papers', coalesce(jsonb_agg(jsonb_build_object(
+      'code',      code,
+      'name',      name,
+      'slug',      slug,
+      'year_from', year_from,
+      'year_to',   year_to,
+      'years',     years
+    ) order by name), '[]'::jsonb),
+  'totals', jsonb_build_object(
+    'papers',    (select count(*)::int from pap),
+    'documents', (select count(*)::int from doc),
+    'year_from', (select min(year_from) from pap),
+    'year_to',   (select max(year_to) from pap)
+  )
+)
+from pap;
+$function$;
+
+revoke all on function public.gate_pyq_index() from public;
+grant execute on function public.gate_pyq_index() to anon, authenticated;
