@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { ExternalLink } from 'lucide-react'
 import { JsonLd } from '@/components/json-ld'
 import { ClosingCta } from '@/components/sections/closing-cta'
 import {
@@ -71,7 +72,10 @@ export default async function GatePyqsPage() {
         '@type': 'ListItem',
         position: i + 1,
         name: `${paper.name} — GATE previous year papers`,
-        url: absoluteUrl(base, `/gate-pyqs/${paper.slug}`),
+        // Each paper is a <details> carrying this id, so the fragment resolves
+        // to a real element. These pointed at /gate-pyqs/<slug> until
+        // 2026-10-02 — 52 URLs that 404, listed in structured data.
+        url: `${absoluteUrl(base, '/gate-pyqs')}#${paper.slug}`,
       })),
     },
   }
@@ -96,22 +100,72 @@ export default async function GatePyqsPage() {
         <Container>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {index.papers.map((paper) => (
-              <Link
-                key={paper.code}
-                href={`/gate-pyqs/${paper.slug}`}
-                className="group focus-visible:outline-none"
-              >
-                <Card className="h-full transition-colors group-hover:border-brand group-focus-visible:border-brand">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="font-semibold leading-snug">{paper.name}</p>
-                    <Badge tone="neutral">{paper.code}</Badge>
-                  </div>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {yearSpan(paper.year_from, paper.year_to)} ·{' '}
-                    {n(documentCount(paper))} PDFs
-                  </p>
-                </Card>
-              </Link>
+              // A <details> rather than a link to a per-paper page: those pages
+              // are Phase 2, and every card on this page pointed at one of the
+              // 52 URLs that 404 until 2026-10-02. A hub whose every outbound
+              // link is broken is the doorway page this file's own note warns
+              // about — and the PDFs, which already sit at public URLs, were
+              // reachable from nowhere on the site. Native disclosure, no JS.
+              //
+              // Known ceiling, measured 2026-10-02: all 1,776 links in the
+              // document make this 1.33 MB of markup, plus 1.71 MB of Next.js
+              // RSC payload duplicating it — 3.0 MB. That is heavy for a page
+              // meant to rank. The fix is Phase 2's per-paper pages, at which
+              // point this hub should list papers and link out rather than
+              // expand them; a paper page would carry ~34 links, not 1,776.
+              // Shipping it expanded is deliberate: it is slower than it should
+              // be, but the alternative that shipped was 52 dead links.
+              <Card key={paper.code} className="h-full">
+                <details id={paper.slug} className="group scroll-mt-24">
+                  <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-semibold leading-snug">{paper.name}</p>
+                      <Badge tone="neutral">{paper.code}</Badge>
+                    </div>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {yearSpan(paper.year_from, paper.year_to)} ·{' '}
+                      {n(documentCount(paper))} PDFs ·{' '}
+                      <span className="font-medium text-brand">
+                        <span className="group-open:hidden">show years</span>
+                        <span className="hidden group-open:inline">hide years</span>
+                      </span>
+                    </p>
+                  </summary>
+                  <ul className="mt-3 space-y-2 border-t border-border pt-3">
+                    {paper.years.map((year) => (
+                      <li key={year.year}>
+                        <p className="text-xs font-semibold tabular-nums">{year.year}</p>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                          {year.paper.map((asset) => (
+                            <a
+                              key={asset.url}
+                              href={asset.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+                            >
+                              {asset.label ? `Paper ${asset.label}` : 'Question paper'}
+                              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                            </a>
+                          ))}
+                          {year.answer_key.map((asset) => (
+                            <a
+                              key={asset.url}
+                              href={asset.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline"
+                            >
+                              {asset.label ? `Key ${asset.label}` : 'Answer key'}
+                              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                            </a>
+                          ))}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              </Card>
             ))}
           </div>
         </Container>
