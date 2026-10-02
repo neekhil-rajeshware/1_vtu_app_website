@@ -34,6 +34,20 @@ export type GatePaper = {
   year_to: number
   /** Newest first. Empty years are absent, not blank. */
   years: GateYear[]
+  /**
+   * The codes the paper's own files are named after, read off the filenames.
+   *
+   * Usually just `code`. Measured 2026-10-02, 29 of the 52 depart from it — AR,
+   * AU, MM, MS, MT, RA and RI each hold copies of ME's 60 PDFs for every year
+   * from 2007 to 2026, and EA, ET, ML and UE hold EC's 37. All of those URLs
+   * return real PDFs, which is why nothing caught it: a link that serves bytes
+   * is not a link that is correct.
+   *
+   * Empty for the 15 papers whose filenames carry no `XX<year>` code at all.
+   * The page prints these codes so a reader can see which paper they are
+   * actually getting; it does not decide whether that is the intended data.
+   */
+  source_codes: string[]
 }
 
 export type GateIndex = {

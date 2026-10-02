@@ -59,6 +59,10 @@ export default async function GatePyqsPage() {
   const { totals } = index
   const n = (value: number) => value.toLocaleString('en-IN')
 
+  // So a code can be read as a paper rather than a riddle. Built from the pages
+  // on this list, which is every paper in the table.
+  const codeName = new Map(index.papers.map((p) => [p.code, p.name]))
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -99,7 +103,18 @@ export default async function GatePyqsPage() {
       <Section>
         <Container>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {index.papers.map((paper) => (
+            {index.papers.map((paper) => {
+              // The codes this paper's files are named after, minus its own.
+              // Printed rather than resolved: 29 of the 52 papers hold another
+              // paper's PDFs, and every one of those links works, so nothing
+              // but the filename says so.
+              const foreign = paper.source_codes.filter((c) => c !== paper.code)
+              const unknown = foreign.filter((c) => !codeName.has(c))
+              const foreignLabel = foreign
+                .map((c) => (codeName.has(c) ? `${c} — ${codeName.get(c)}` : c))
+                .join(', ')
+
+              return (
               // A <details> rather than a link to a per-paper page: those pages
               // are Phase 2, and every card on this page pointed at one of the
               // 52 URLs that 404 until 2026-10-02. A hub whose every outbound
@@ -130,6 +145,15 @@ export default async function GatePyqsPage() {
                         <span className="hidden group-open:inline">hide years</span>
                       </span>
                     </p>
+                    {foreignLabel ? (
+                      <p className="mt-1 text-xs font-medium text-muted-foreground">
+                        These PDFs are named {foreignLabel}
+                        {unknown.length === foreign.length
+                          ? ', which is not one of the papers listed here'
+                          : ''}
+                        .
+                      </p>
+                    ) : null}
                   </summary>
                   <ul className="mt-3 space-y-2 border-t border-border pt-3">
                     {paper.years.map((year) => (
@@ -166,7 +190,8 @@ export default async function GatePyqsPage() {
                   </ul>
                 </details>
               </Card>
-            ))}
+              )
+            })}
           </div>
         </Container>
       </Section>

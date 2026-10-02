@@ -481,3 +481,185 @@ $function$;
 
 revoke all on function public.vtu_pyq_index() from public;
 grant execute on function public.vtu_pyq_index() to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 5. gate_pyq_index() — report the code the files themselves carry
+-- ---------------------------------------------------------------------------
+--
+-- Measured 2026-10-02: 29 of the 52 papers reference a file code other than
+-- their own, and it is not an old-years-reuse-the-parent-paper pattern.
+--
+--   * AR, AU, MM, MS, MT, RA, RI each hold exactly 60 assets, every one a copy
+--     of ME's 60 — for every year 2007 through 2026, not just the early ones.
+--   * EA, ET, ML, UE each hold exactly 37, every one EC's.
+--   * AD, AI, CD, CI, DS each hold 6, every one DA's.
+--
+-- Every one of those URLs returns a real PDF, which is exactly why this went
+-- unnoticed: a link that serves bytes is not a link that is correct. A student
+-- searching for the AR paper was being handed the ME paper under the AR name.
+--
+-- Whether the folders are meant to mirror (a GATE aspirant for those branches
+-- sitting the parent paper) or were fanned out by mistake is not something this
+-- function can know. What it CAN know is what the files are called, so it
+-- reports that per paper and the page says it. Deciding the folders are wrong
+-- is a data change, and a production write this migration deliberately does not
+-- make.
+--
+-- Additive: `source_codes` is a new key. A paper whose files agree with its own
+-- code reports that single code, so the page can stay silent for it.
+
+create or replace function public.gate_pyq_index()
+returns jsonb
+language sql
+stable
+set search_path = public
+as $function$
+with cell as (
+  select g.code, g.name, g.slug,
+         e.key::int     as year,
+         e.value::jsonb as j
+  from gatepyqs g
+  cross join lateral jsonb_each_text(
+    to_jsonb(g) - 'code' - 'name' - 'slug' - 'id'
+  ) e
+  where e.value is not null and e.value <> ''
+    and e.key ~ '^[0-9]{4}$'
+),
+asset as (
+  select c.code, c.name, c.slug, c.year, t.k as kind, a.v as item
+  from cell c
+  cross join lateral (values ('Paper'), ('Answer Key')) as t(k)
+  cross join lateral (
+    -- A bare string becomes a one-element array so jsonb_array_elements is
+    -- never inside the CASE: Postgres rejects a set-returning function in a
+    -- CASE branch outright (0A000).
+    select jsonb_array_elements(
+      case when jsonb_typeof(c.j -> t.k) = 'array' then c.j -> t.k
+           else jsonb_build_array(c.j -> t.k) end
+    )
+  ) as a(v)
+  where c.j ? t.k
+),
+-- Both cell shapes, resolved once so the filename can be read off the URL.
+-- Note the trap this file has already documented twice: `item ->> 'url'`
+-- returns NULL on a bare string, dropping every such cell with no error.
+resolved as (
+  select code, name, slug, year, kind,
+         case when jsonb_typeof(item) = 'object' then item ->> 'url'
+              else item #>> '{}' end as url,
+         case when jsonb_typeof(item) = 'object' then item ->> 'label'
+              else null end          as label
+  from asset
+),
+doc as (
+  select *,
+         -- "2025_CS1_AnswerKey.pdf" -> CS; "ME2016_3" -> ME. Two uppercase
+         -- letters immediately before a four-digit year is the one pattern
+         -- every file in this bucket follows; filenames that carry no code
+         -- yield NULL and are simply not counted.
+         substring(
+           split_part(url, '/', array_length(string_to_array(url, '/'), 1))
+           from '([A-Z]{2})[0-9]{4}'
+         ) as file_code
+  from resolved
+  where url is not null
+),
+-- Every code the paper's own files are named after, so a mismatch is visible
+-- rather than inferred.
+sources as (
+  select code,
+         jsonb_agg(distinct file_code order by file_code) as source_codes
+  from doc
+  where file_code is not null
+  group by code
+),
+yr as (
+  select code, name, slug, year,
+         jsonb_agg(jsonb_build_object('url', url, 'label', label)
+                   order by label nulls first)
+           filter (where kind = 'Paper')      as paper,
+         jsonb_agg(jsonb_build_object('url', url, 'label', label)
+                   order by label nulls first)
+           filter (where kind = 'Answer Key') as answer_key
+  from doc
+  group by code, name, slug, year
+),
+pap as (
+  select code, name, slug,
+         jsonb_agg(jsonb_build_object(
+           'year',       year,
+           'paper',      coalesce(paper, '[]'::jsonb),
+           'answer_key', coalesce(answer_key, '[]'::jsonb)
+         ) order by year desc) as years,
+         min(year) as year_from,
+         max(year) as year_to
+  from yr
+  group by code, name, slug
+)
+select jsonb_build_object(
+  'papers', coalesce(jsonb_agg(jsonb_build_object(
+      'code',         code,
+      'name',         name,
+      'slug',         slug,
+      'year_from',    year_from,
+      'year_to',      year_to,
+      'years',        years,
+      'source_codes', coalesce(s.source_codes, '[]'::jsonb)
+    ) order by name), '[]'::jsonb),
+  'totals', jsonb_build_object(
+    'papers',    (select count(*)::int from pap),
+    'documents', (select count(*)::int from doc),
+    'year_from', (select min(year_from) from pap),
+    'year_to',   (select max(year_to) from pap)
+  )
+)
+from pap
+left join sources s on s.code = pap.code;
+$function$;
+
+revoke all on function public.gate_pyq_index() from public;
+grant execute on function public.gate_pyq_index() to anon, authenticated;
+
+do $$
+declare
+  v jsonb := public.gate_pyq_index();
+  v_papers     int;
+  v_documents  int;
+  v_mismatched int;
+  v_uncoded    int;
+begin
+  v_papers    := (v -> 'totals' ->> 'papers')::int;
+  v_documents := (v -> 'totals' ->> 'documents')::int;
+
+  -- Two different populations, and conflating them is how the first cut of
+  -- this assertion reported 44: a paper whose files carry SOMEONE ELSE'S code
+  -- (29) is not the same as a paper whose filenames carry no code at all (15).
+  -- The page labels only the first.
+  select count(*) into v_mismatched
+  from jsonb_array_elements(v -> 'papers') p
+  where jsonb_array_length(p -> 'source_codes') > 0
+    and not ((p -> 'source_codes') ? (p ->> 'code'));
+
+  select count(*) into v_uncoded
+  from jsonb_array_elements(v -> 'papers') p
+  where jsonb_array_length(p -> 'source_codes') = 0;
+
+  if v_papers <> 52 then
+    raise exception 'gate_pyq_index: % papers, expected 52', v_papers;
+  end if;
+
+  if v_documents <> 1776 then
+    raise exception 'gate_pyq_index: % documents, expected 1776', v_documents;
+  end if;
+
+  if v_mismatched <> 29 then
+    raise exception 'gate_pyq_index: % papers whose files carry another code, expected 29', v_mismatched;
+  end if;
+
+  if v_uncoded <> 15 then
+    raise exception 'gate_pyq_index: % papers whose filenames carry no code, expected 15', v_uncoded;
+  end if;
+
+  raise notice 'gate_pyq_index: % papers, % documents, % carrying another code, % uncoded',
+    v_papers, v_documents, v_mismatched, v_uncoded;
+end $$;
