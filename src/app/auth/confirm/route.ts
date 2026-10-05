@@ -23,8 +23,17 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get('type') as EmailOtpType | null
   const code = searchParams.get('code')
   const next = searchParams.get('next')
+  // Same-site destinations only — an absolute URL here would bounce the
+  // freshly-issued session off to another origin.
+  const sameSite =
+    next && next.startsWith('/') && !next.startsWith('//') ? next : null
+  // Students land on /reset-password; anything admin-shaped keeps its old
+  // target, and anything unrecognised falls back to the admin default.
   const destination =
-    next && next.startsWith('/admin') ? next : '/admin/account?recovery=1'
+    sameSite &&
+    (sameSite === '/reset-password' || sameSite.startsWith('/admin'))
+      ? sameSite
+      : '/admin/account?recovery=1'
 
   // An expired or already-used link comes back as an error, not a token.
   if (searchParams.get('error') || searchParams.get('error_code')) {
