@@ -5,17 +5,20 @@ import { createClient } from '@/lib/supabase/server'
 
 /**
  * Where the password-reset email lands. Supabase sends a one-time token here;
- * we exchange it for a session and then send the admin on to set a new
- * password. Nothing here can create an account — the token has to match a user
- * that already exists.
+ * we exchange it for a session and then send the person on to set a new
+ * password — a student to /reset-password, a web admin to their account page.
+ * Nothing here can create an account — the token has to match a user that
+ * already exists.
  *
  * The link arrives in one of two shapes, depending on the email template in
  * Supabase, so both are handled:
  *
- * - `?code=…` — the stock template, which routes through Supabase's own
- *   `/auth/v1/verify` first and then sends the browser here.
  * - `?token_hash=…&type=…` — the template from Supabase's SSR guide, which
- *   comes straight here.
+ *   comes straight here. Needs no PKCE verifier, so this is the shape that
+ *   works for a link requested from the mobile app.
+ * - `?code=…` — the stock template, which routes through Supabase's own
+ *   `/auth/v1/verify` first and then sends the browser here. Only redeemable
+ *   in the browser that started the flow.
  */
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl
@@ -35,9 +38,19 @@ export async function GET(request: NextRequest) {
       ? sameSite
       : '/admin/account?recovery=1'
 
+  // A dead link should explain itself where the person was headed. A student
+  // left on the admin sign-in page reads it as "this was not meant for me".
+  const forStudent = destination === '/reset-password'
+  const expiredTo = forStudent
+    ? '/reset-password'
+    : '/admin/login?error=link-expired'
+  const invalidTo = forStudent
+    ? '/reset-password'
+    : '/admin/login?error=link-invalid'
+
   // An expired or already-used link comes back as an error, not a token.
   if (searchParams.get('error') || searchParams.get('error_code')) {
-    redirect('/admin/login?error=link-expired')
+    redirect(expiredTo)
   }
 
   const supabase = await createClient()
@@ -45,19 +58,19 @@ export async function GET(request: NextRequest) {
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (error) {
-      redirect('/admin/login?error=link-expired')
+      redirect(expiredTo)
     }
     redirect(destination)
   }
 
   if (!token_hash || !type) {
-    redirect('/admin/login?error=link-invalid')
+    redirect(invalidTo)
   }
 
   const { error } = await supabase.auth.verifyOtp({ type, token_hash })
 
   if (error) {
-    redirect('/admin/login?error=link-expired')
+    redirect(expiredTo)
   }
 
   redirect(destination)

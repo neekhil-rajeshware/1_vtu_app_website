@@ -86,7 +86,8 @@ export function ResetPasswordForm() {
       <div className="space-y-3">
         <p className="font-semibold">Your password has been changed.</p>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Open the app and sign in with your new password.
+          Sign in with your new password — in the app, or in the admin
+          dashboard if you have one.
         </p>
       </div>
     )
