@@ -11,6 +11,14 @@ const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string
     title: 'Product',
     links: [
       { href: '/features', label: 'All features' },
+      /*
+       * The two paper hubs. They are the site's highest-intent search pages and
+       * for a while the only internal link to either was a tile on /coverage,
+       * so every page that is not /coverage was a dead end for them. A footer
+       * link puts both one click from everywhere.
+       */
+      { href: '/gate-pyqs', label: 'GATE question papers' },
+      { href: '/vtu-pyqs', label: 'VTU question papers' },
       { href: '/vtu-result-dates', label: 'VTU result dates' },
       { href: '/coverage', label: 'What is in the app' },
       { href: '/screenshots', label: 'Screenshots' },

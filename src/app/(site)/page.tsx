@@ -7,6 +7,7 @@ import { FeatureGroups } from '@/components/sections/feature-groups'
 import { Hero } from '@/components/sections/hero'
 import { Highlights } from '@/components/sections/highlights'
 import { HowItWorks } from '@/components/sections/how-it-works'
+import { PaperHubs } from '@/components/sections/paper-hubs'
 import { ScreenshotShowcase } from '@/components/sections/screenshot-showcase'
 import { StatsStrip } from '@/components/sections/stats-strip'
 import { Testimonials } from '@/components/sections/testimonials'
@@ -23,6 +24,7 @@ import {
   getTestimonials,
   getVersions,
 } from '@/lib/content'
+import { getCoverage } from '@/lib/coverage'
 import { mobileApplicationJsonLd, pageMetadata } from '@/lib/seo'
 import { appName, getSettings } from '@/lib/settings'
 
@@ -52,6 +54,7 @@ export default async function HomePage() {
     faqs,
     posts,
     versions,
+    coverage,
   ] = await Promise.all([
     getSettings(),
     getHomeSections(),
@@ -63,6 +66,13 @@ export default async function HomePage() {
     getFaqs(),
     getPublishedPosts(3),
     getVersions(),
+    /*
+     * `getStats()` above already reads this, and `getCoverage` is wrapped in
+     * React's `cache()`, so the second call is the same request's result and
+     * not a second round trip. Calling it directly is how the paper band gets
+     * live counts instead of typed ones.
+     */
+    getCoverage(),
   ])
 
   // Sections can be hidden individually from Admin -> Home Page.
@@ -91,6 +101,19 @@ export default async function HomePage() {
       ) : null}
       {visible('highlights') ? (
         <Highlights section={sections.highlights} features={highlights} />
+      ) : null}
+      {/*
+        Above the fold-ish on purpose. "VTU question papers" and "GATE previous
+        year papers" are the phrases people actually arrive on, and before this
+        band existed the only path to either hub was two clicks deep through
+        /coverage.
+      */}
+      {visible('papers') ? (
+        <PaperHubs
+          section={sections.papers}
+          gateDocuments={coverage?.snapshot.gate.documents ?? null}
+          vtuDocuments={coverage?.snapshot.pyq.documents ?? null}
+        />
       ) : null}
       {visible('screenshots') ? (
         <ScreenshotShowcase section={sections.screenshots} screenshots={screenshots} />
