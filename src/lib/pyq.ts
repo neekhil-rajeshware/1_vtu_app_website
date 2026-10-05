@@ -78,6 +78,16 @@ export type VtuPaper = {
    * 1BESC104A is listed under CSE, ECE, EEE and ME, and the page printed "EEE".
    */
   streams: string
+  /**
+   * The semesters the subject is taught in — `1`, `2`, `1 & 2`, or the literal
+   * `Not recorded`.
+   *
+   * A set for the same reason `streams` is, and NULL is a real answer: 15 of the
+   * 33 subjects behind these papers have no `subjects.semester` at all, so the
+   * RPC labels that rather than guessing. A blank dropdown entry would look like
+   * a bug; "Semester not recorded" is the truth.
+   */
+  semesters: string
   /** One or more sittings, e.g. `Dec 2025 – Jan 2026, June – July 2026`. */
   sessions: string
   url: string

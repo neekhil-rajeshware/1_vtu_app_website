@@ -1,19 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ExternalLink } from 'lucide-react'
 import { JsonLd } from '@/components/json-ld'
 import { ClosingCta } from '@/components/sections/closing-cta'
-import {
-  Badge,
-  ButtonLink,
-  Card,
-  Container,
-  PageHeader,
-  Section,
-  SectionHeading,
-} from '@/components/ui'
-import { getVtuIndex, type VtuPaper } from '@/lib/pyq'
+import { ButtonLink, Container, PageHeader, Section, SectionHeading } from '@/components/ui'
+import { VtuPyqBrowser } from '@/components/vtu-pyq-browser'
+import { getVtuIndex } from '@/lib/pyq'
 import { absoluteUrl, pageMetadata } from '@/lib/seo'
 import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 
@@ -68,15 +60,6 @@ export default async function VtuPyqsPage() {
   const base = publicWebsiteUrl(settings)
   const { totals } = index
 
-  // Grouped by subject so a student scans for their own subject once rather
-  // than hunting a code in a flat list.
-  const bySubject = new Map<string, VtuPaper[]>()
-  for (const paper of index.papers) {
-    const list = bySubject.get(paper.subject_name) ?? []
-    list.push(paper)
-    bySubject.set(paper.subject_name, list)
-  }
-
   const request = new URLSearchParams({
     subject: REQUEST_SUBJECT,
     message: 'Please add the first-year VTU question papers for: ',
@@ -109,34 +92,7 @@ export default async function VtuPyqsPage() {
 
       <Section>
         <Container>
-          <div className="space-y-3">
-            {[...bySubject.entries()].map(([name, papers]) => (
-              <Card key={name}>
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-semibold leading-snug">{name}</p>
-                  <Badge tone="neutral">{papers[0].subject_code}</Badge>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {papers[0].streams}
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {papers.map((paper) => (
-                    <li key={paper.url}>
-                      <a
-                        href={paper.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-                      >
-                        {paper.sessions}
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            ))}
-          </div>
+          <VtuPyqBrowser papers={index.papers} />
         </Container>
       </Section>
 
