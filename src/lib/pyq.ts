@@ -139,20 +139,14 @@ export const getVtuIndex = cache(async (): Promise<VtuIndex> => {
 })
 
 /**
- * `2007` or `2007–2026`, en dash.
+ * `yearSpan` and `documentCount` are defined in `./pyq-format` and re-exported
+ * here, so every existing `from '@/lib/pyq'` import keeps working and nothing
+ * has to know they moved.
  *
- * Here rather than in each page because the hub heading, the per-paper page and
- * the `<meta>` all need it, and three copies of one piece of arithmetic is
- * three chances for a paper to be described two different ways.
+ * They moved because this module imports `next/headers`. A `'use client'`
+ * component showing a paper needs both values, and a **value** import from here
+ * pulls the server Supabase client into the browser bundle — the build fails
+ * with "Ecmascript file had an error" and a five-deep import trace. Types are
+ * unaffected; an `import type` is erased.
  */
-export function yearSpan(from: number, to: number): string {
-  return from === to ? String(from) : `${from}–${to}`
-}
-
-/** How many PDFs a paper actually has, answer keys included. */
-export function documentCount(paper: GatePaper): number {
-  return paper.years.reduce(
-    (total, year) => total + year.paper.length + year.answer_key.length,
-    0,
-  )
-}
+export { documentCount, yearSpan } from './pyq-format'
