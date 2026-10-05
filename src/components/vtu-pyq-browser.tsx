@@ -9,29 +9,30 @@ import type { VtuPaper } from '@/lib/pyq'
  * Search and filter over the 59 VTU first-year papers, styled after the
  * `/coverage` "Check your branch" widget.
  *
- * The dimensions are the ones the data actually varies in. A Scheme dropdown
- * was asked for and is deliberately absent: all 59 papers are 2025 CBCS, so it
- * would be one option. A Branch dropdown was asked for and `branch` cannot
- * supply it — every one of these subjects is first-year and common, so
- * `subjects.branch` is NULL on all of them. The stream is what varies, and the
- * dropdown below is built from it.
+ * **Every option here comes from the rows, and nothing is keyed to a value the
+ * code knows about.** The branch list is the distinct `streams` tokens the
+ * papers actually carry; the semester list is the distinct `semesters` tokens.
+ * A branch added to `subjects` tomorrow shows up in the dropdown, and a paper
+ * recorded under a semester format nobody anticipated still renders, because
+ * the only thing this file does to a value is decide whether to prefix it with
+ * the word "Semester". There is no map of known branches and no list of known
+ * semesters to forget to update.
+ *
+ * That is why the two dimensions are read off `subjects` rather than joined to
+ * the `branches` table: `subjects.stream` speaks its own vocabulary (CSE, ECE,
+ * EEE, CV, ME) and `branches.code` has only some of those (CV, ME) — joining
+ * would silently drop the branches that do not match.
+ *
+ * Two fields the request named are deliberately absent. A Scheme dropdown,
+ * because all 59 papers are 2025 CBCS and it would have one option. And a
+ * Branch dropdown built on `subjects.branch`, because that column is NULL on
+ * every one of these first-year subjects — what varies is the stream, which is
+ * what this uses.
  *
  * Filtering is client-side over rows the server already sent. There is no
  * second request and no URL state: 59 rows is nothing to hold in memory, and a
- * query string would be a second source of truth to keep the page and the
- * filters agreeing about.
+ * query string would be a second source of truth.
  */
-
-/** What `subjects.stream` actually holds for a subject common to every branch. */
-const COMMON = 'ALL'
-const COMMON_LABEL = 'All branches'
-
-const SEMESTER_LABELS: Record<string, string> = {
-  '1': 'Semester 1',
-  '2': 'Semester 2',
-  '1 & 2': 'Semesters 1 & 2',
-  'Not recorded': 'Semester not recorded',
-}
 
 /** Matches `coverage-checker.tsx`, so the two widgets read as one thing. */
 const fieldClass =
@@ -44,14 +45,20 @@ const tokens = (value: string) =>
     .map((token) => token.trim())
     .filter(Boolean)
 
-const streamLabel = (value: string) =>
-  tokens(value)
-    .map((token) => (token === COMMON ? COMMON_LABEL : token))
-    .join(', ')
-
+/**
+ * `1` → `Semester 1`, `1 & 2` → `Semesters 1 & 2`, and anything the database
+ * already spells out (`Not recorded`) passes through untouched.
+ *
+ * A rule rather than a lookup table, so a semester value this file has never
+ * seen renders as itself instead of falling into a default.
+ */
 const semesterLabel = (value: string) =>
   tokens(value)
-    .map((token) => SEMESTER_LABELS[token] ?? `Semester ${token}`)
+    .map((token) =>
+      /^\d+(\s*&\s*\d+)*$/.test(token)
+        ? `${token.includes('&') ? 'Semesters' : 'Semester'} ${token}`
+        : token,
+    )
     .join(', ')
 
 export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
@@ -101,20 +108,7 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
 
       if (semester && !tokens(paper.semesters).includes(semester)) return false
 
-      if (branch) {
-        const streams = tokens(paper.streams)
-        /*
-         * A subject listed for ALL streams belongs to whichever branch is
-         * picked. "My branch" means the papers I can sit, not the papers that
-         * happen to carry my branch code — so a CSE student sees the 13 CSE
-         * papers and the 23 common ones, and picking "All branches" is how you
-         * isolate the 23.
-         */
-        const matches =
-          streams.includes(branch) ||
-          (branch !== COMMON && streams.includes(COMMON))
-        if (!matches) return false
-      }
+      if (branch && !tokens(paper.streams).includes(branch)) return false
 
       return true
     })
@@ -170,7 +164,7 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
               <option value="">Any branch</option>
               {branches.map((token) => (
                 <option key={token} value={token}>
-                  {token === COMMON ? `${COMMON_LABEL} (common)` : token}
+                  {token}
                 </option>
               ))}
             </select>
@@ -186,7 +180,7 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
               <option value="">Any semester</option>
               {semesters.map((token) => (
                 <option key={token} value={token}>
-                  {SEMESTER_LABELS[token] ?? `Semester ${token}`}
+                  {semesterLabel(token)}
                 </option>
               ))}
             </select>
@@ -237,7 +231,7 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
                 <Badge tone="neutral">{subjectPapers[0].subject_code}</Badge>
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {streamLabel(subjectPapers[0].streams)} ·{' '}
+                {subjectPapers[0].streams} ·{' '}
                 {semesterLabel(subjectPapers[0].semesters)}
               </p>
               <ul className="mt-3 space-y-2">

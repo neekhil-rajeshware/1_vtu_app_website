@@ -71,11 +71,18 @@ export type VtuPaper = {
   subject_name: string
   /**
    * Every stream the subject is listed under, comma-separated — `EEE` for most,
-   * `CSE, ECE, EEE, ME` for a first-year subject several streams share.
+   * `CSE, CV, ECE, EEE, ME` for a first-year subject every branch sits.
    *
    * The set, not one member of it. `subjects` holds one row per stream, and the
    * first cut of `vtu_pyq_index()` resolved them with `limit 1` and no ORDER BY:
    * 1BESC104A is listed under CSE, ECE, EEE and ME, and the page printed "EEE".
+   *
+   * A subject common to every branch used to come back as the literal `ALL`,
+   * with the site holding a constant that knew what that meant. The RPC expands
+   * it now, so the value is always real stream names and no consumer needs to
+   * know a sentinel exists. `All branches` survives only as the fallback for a
+   * paper whose filename resolves to no subject at all, where the branch is
+   * genuinely unknown.
    */
   streams: string
   /**
