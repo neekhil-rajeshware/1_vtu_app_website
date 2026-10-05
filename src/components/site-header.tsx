@@ -85,13 +85,23 @@ export function SiteHeader({
 
         <div className="ml-auto flex items-center gap-2 md:ml-2">
           <ThemeToggle />
-          <Link
-            href="/download"
-            className={buttonClass('primary', 'sm', 'hidden sm:inline-flex')}
-          >
-            <Download className="h-4 w-4" />
-            Get the app
-          </Link>
+          {/*
+            The wrapper carries the breakpoint, not the button.
+
+            `buttonClass` starts with `inline-flex`, and an element holding both
+            `inline-flex` and `hidden` renders inline-flex: the base display
+            utility beats the override whatever order the two are written in,
+            and the media-scoped variant loses too. So `hidden sm:inline-flex`
+            on the Link below did nothing, and the button sat on phones beside
+            the hamburger despite being written to hide there. A plain span has
+            no base display utility to fight, so `hidden` wins as expected.
+          */}
+          <span className="hidden sm:block">
+            <Link href="/download" className={buttonClass('primary', 'sm')}>
+              <Download className="h-4 w-4" />
+              Get the app
+            </Link>
+          </span>
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
