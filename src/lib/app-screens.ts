@@ -9,8 +9,12 @@ import type { Screenshot } from '@/lib/content'
  * the gallery is never empty on a fresh deploy, but it is still fully editable
  * without touching code.
  *
- * Every capture is a real 1080x2400 screen from a phone, with the student's
- * name, USN, college and email replaced by a demo profile.
+ * Every capture is a real 1080x2400 screen from a phone. The 2026-10 refresh was
+ * taken from a live test account, so those screens show that account's own name,
+ * college and email; the earlier images carry the SAMPLE INSTITUTE OF TECHNOLOGY
+ * demo profile. Screens whose content depends on study data (results, marks,
+ * attendance, flashcards, quizzes, PYQs) deliberately keep the earlier capture —
+ * the test account is empty and a fresh shot of them is an empty state.
  *
  * `hidden: true` means the screen ships switched off — it is still listed in
  * Admin -> Screenshots, where it can be switched on with one click.
@@ -65,8 +69,9 @@ const SHOTS: Shot[] = [
     title: 'Exam timetable',
     caption: 'Your VTU exam dates in one list, and the plan is built from them.',
     category: 'Study tools',
-    // Ships switched off: this student had no exams scheduled, so the screen is
-    // empty. Switch it on in Admin -> Screenshots after a fuller capture.
+    // Ships switched off: the timetable holds one exam card against a lot of
+    // empty space, which reads as a broken screen in a gallery. Switch it on in
+    // Admin -> Screenshots once a student with a full exam sheet is captured.
     hidden: true,
   },
   {
@@ -109,6 +114,12 @@ const SHOTS: Shot[] = [
     file: '13-daily-revision.png',
     title: 'Daily Revision',
     caption: 'Flashcards and a daily quiz from the topics you ticked off.',
+    category: 'Study tools',
+  },
+  {
+    file: '53-daily-dose.png',
+    title: 'Daily Dose',
+    caption: 'One formula and one question a day, picked for your branch.',
     category: 'Study tools',
   },
   {
@@ -184,6 +195,12 @@ const SHOTS: Shot[] = [
     category: 'Study tools',
   },
   {
+    file: '50-graphing.png',
+    title: 'Graphing calculator',
+    caption: 'Type an equation and watch the curve draw itself.',
+    category: 'Study tools',
+  },
+  {
     file: '24-tab-ai-professor.png',
     title: 'AI Professor',
     caption: 'Ask anything about your subjects and get answers from your syllabus.',
@@ -211,6 +228,18 @@ const SHOTS: Shot[] = [
     file: '44-ai-professor-documents.png',
     title: 'What the AI reads',
     caption: 'Your syllabus and papers, indexed on the phone — pick which to ask about.',
+    category: 'AI',
+  },
+  {
+    file: '51-ai-notebook.png',
+    title: 'AI Notebook',
+    caption: 'Keep a paper, project or syllabus together and ask the AI about it.',
+    category: 'AI',
+  },
+  {
+    file: '52-learn-with-gen-ai.png',
+    title: 'Learn with Gen AI',
+    caption: 'Name a topic and Gen AI draws it out, then walks you through it.',
     category: 'AI',
   },
   {
