@@ -9,8 +9,22 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { buttonClass } from '@/components/ui'
 import { cn } from '@/lib/utils'
 
-const NAV_LINKS = [
+/*
+ * `wideOnly` links render from `lg` up but not at `md`.
+ *
+ * The row is `md:flex`, and measured at 900px the seven items did not fit: the
+ * logo, "GATE papers", "VTU papers" and the "Get the app" button all wrapped to
+ * two lines. At 1024 they fit on one. So the five original links hold `md`, and
+ * the two paper hubs join at `lg` rather than the whole nav moving up to `lg`
+ * and taking five links away from tablets.
+ *
+ * The mobile menu maps this same array without a breakpoint filter, so the
+ * paper links are in the hamburger at every width, phones included.
+ */
+const NAV_LINKS: Array<{ href: string; label: string; wideOnly?: boolean }> = [
   { href: '/features', label: 'Features' },
+  { href: '/gate-pyqs', label: 'GATE papers', wideOnly: true },
+  { href: '/vtu-pyqs', label: 'VTU papers', wideOnly: true },
   { href: '/screenshots', label: 'Screenshots' },
   { href: '/blog', label: 'Blog' },
   { href: '/about', label: 'About' },
@@ -56,7 +70,8 @@ export function SiteHeader({
               key={link.href}
               href={link.href}
               className={cn(
-                'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                link.wideOnly && 'hidden lg:inline-flex',
                 isActive(link.href)
                   ? 'bg-muted text-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',
