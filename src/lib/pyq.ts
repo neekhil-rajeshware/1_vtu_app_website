@@ -67,6 +67,22 @@ export type GateIndex = {
 }
 
 export type VtuPaper = {
+  /**
+   * `1` / `2`, and the scheme's own name — `2025 CBCS` / `2022 CBCS`.
+   *
+   * Added 2026-10-07, when the py_qp backfill brought 2022-scheme papers in
+   * beside the 2025-scheme ones: 360 of the 436 are now 2022 CBCS and 76 are
+   * 2025 CBCS, against a page that until then had only ever held 2025 papers.
+   *
+   * The RPC also groups by `scheme_code`, which matters more than the filter it
+   * enables. Its group key is (scheme_code, subject_code, subject_name,
+   * base_file), and `base_file` is only the *filename* — stripped of the R2
+   * folder that names the scheme — so a 2022 and a 2025 paper sharing a subject
+   * code and a filename used to merge into one card, with `min(url)` quietly
+   * choosing which of the two PDFs to link to.
+   */
+  scheme_code: string
+  scheme_name: string
   subject_code: string
   subject_name: string
   /**
@@ -106,10 +122,14 @@ export type VtuIndex = {
     /**
      * Distinct documents, not filled cells and not rows.
      *
-     * 59 on 2026-10-02. An earlier version of the RPC counted rows and said
-     * 170: one subject per stream held the same files, and those files carried
-     * browser duplicate-download suffixes. If this number jumps, suspect the
-     * cell-shape handling before believing the collection grew.
+     * 436 on 2026-10-07, up from 59. That jump was real — the py_qp backfill
+     * filled five session columns the RPC had never had data in — but the same
+     * jump has lied before: an earlier version of the RPC counted rows and said
+     * 170, because one subject per stream held the same files and those files
+     * carried browser duplicate-download suffixes. So a rise here still means
+     * "check the cell-shape handling" before it means "the collection grew".
+     * What settles it is that the paper count and the filled-cell count moved
+     * together; only one of them moving is a bug.
      */
     papers: number
     subjects: number

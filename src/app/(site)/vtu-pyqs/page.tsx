@@ -5,26 +5,33 @@ import { JsonLd } from '@/components/json-ld'
 import { ClosingCta } from '@/components/sections/closing-cta'
 import { ButtonLink, Container, PageHeader, Section, SectionHeading } from '@/components/ui'
 import { VtuPyqBrowser } from '@/components/vtu-pyq-browser'
-import { getVtuIndex } from '@/lib/pyq'
+import { getVtuIndex, type VtuPaper } from '@/lib/pyq'
 import { absoluteUrl, pageMetadata } from '@/lib/seo'
 import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 
 /**
- * The VTU question papers we hold — first year, and only what exists.
+ * Every VTU question paper we hold, and only what exists.
  *
- * Titled for what it is rather than what would rank. A 2022-scheme fifth-
- * semester student landing on a page promising "VTU previous year papers" and
- * finding first-year papers has been misled, which is the failure mode
- * `/coverage` was built to avoid; so the title says first year.
+ * This page was titled "VTU first-year question papers" on purpose: all 59
+ * papers were first-year, and a 2022-scheme fifth-semester student landing on a
+ * page promising "VTU previous year papers" and finding first-year papers has
+ * been misled — the failure mode `/coverage` was built to avoid. The 2026-10-07
+ * py_qp backfill inverted that: 360 of the 436 papers are now 2022-scheme
+ * semesters 5–7 against 76 first-year ones. So the title says question papers
+ * and the subtitle says which schemes, because that is what is actually here.
  *
- * Every number here is derived. An earlier version of the index behind this
- * page counted rows and advertised 170 papers; the rows were not papers. One
- * subject — Engineering Drawing — is listed once per stream in `subjects`, and
- * all five of those rows held the same files, so the page would have handed an
- * ME student a CSE paper and claimed three times the collection. The index now
- * resolves each paper's subject from the filename and drops browser
- * duplicate-download suffixes, so this page reports 59 papers across 33
- * subjects and every one of them is a distinct document.
+ * Hardcoding either would go stale again. Every number *and* every scheme name
+ * below is read off the rows, so the next backfill cannot leave the prose
+ * describing a collection that is no longer there — which is exactly how this
+ * page came to advertise a first-year collection four days after it stopped
+ * being one.
+ *
+ * An earlier version of the index behind this page counted rows and advertised
+ * 170 papers; the rows were not papers. One subject — Engineering Drawing — is
+ * listed once per stream in `subjects`, and all five of those rows held the same
+ * files, so the page would have handed an ME student a CSE paper and claimed
+ * three times the collection. The index resolves each paper's subject from the
+ * filename and drops browser duplicate-download suffixes.
  *
  * `/contact` ignores a subject it does not have in its list, so the prefill
  * below spells the option exactly as `contact-form.tsx` does — the same string
@@ -33,11 +40,26 @@ import { getSettings, publicWebsiteUrl } from '@/lib/settings'
 
 const REQUEST_SUBJECT = 'Missing question paper or syllabus'
 
+/**
+ * Newest first, matching the Scheme dropdown (`scheme_code` runs newest-first:
+ * `1` is 2025 CBCS, `2` is 2022 CBCS). Deduplicated, because one scheme has many
+ * papers and the sentence this feeds wants schemes, not papers.
+ */
+function schemeNames(papers: VtuPaper[]): string[] {
+  const byCode = new Map(papers.map((paper) => [paper.scheme_code, paper.scheme_name]))
+  return [...byCode.entries()]
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([, name]) => name)
+}
+
+/** `A and B`, `A, B and C` — so the sentence reads as English at any count. */
+const list = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' })
+
 export async function generateMetadata(): Promise<Metadata> {
   const index = await getVtuIndex()
   if (index.papers.length === 0) {
     return {
-      title: 'VTU first-year question papers',
+      title: 'VTU question papers',
       robots: { index: false, follow: true },
     }
   }
@@ -45,10 +67,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const { papers, subjects, sessions } = index.totals
 
   return pageMetadata({
-    title: `VTU First-Year Question Papers — ${papers} Papers, ${subjects} Subjects`,
+    title: `VTU Question Papers — ${papers} Papers, ${subjects} Subjects`,
     description:
-      `${papers} VTU first-year question papers across ${subjects} subjects and ` +
-      `${sessions} exam sessions. Free PDFs for every stream, no sign-up required.`,
+      `${papers} VTU question papers across ${subjects} subjects and ` +
+      `${sessions} exam sittings, for the ${list.format(schemeNames(index.papers))} ` +
+      `schemes. Free PDFs, no sign-up required.`,
     path: '/vtu-pyqs',
   })
 }
@@ -59,16 +82,17 @@ export default async function VtuPyqsPage() {
 
   const base = publicWebsiteUrl(settings)
   const { totals } = index
+  const schemes = list.format(schemeNames(index.papers))
 
   const request = new URLSearchParams({
     subject: REQUEST_SUBJECT,
-    message: 'Please add the first-year VTU question papers for: ',
+    message: 'Please add the VTU question papers for: ',
   })
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: 'VTU First-Year Question Papers',
+    name: 'VTU Question Papers',
     url: absoluteUrl(base, '/vtu-pyqs'),
     isPartOf: { '@id': `${base}/#website` },
   }
@@ -81,12 +105,13 @@ export default async function VtuPyqsPage() {
           Section/Container. See coverage/page.tsx. */}
       <PageHeader
         eyebrow="Question papers"
-        title="VTU first-year question papers"
+        title="VTU question papers"
         subtitle={
-          `${totals.papers} papers across ${totals.subjects} subjects and ` +
-          `${totals.sessions} exam sittings, every one free to download. This is ` +
-          `everything we hold for VTU question papers — later semesters are still ` +
-          `being collected, and the app shows each subject's syllabus today.`
+          `Everything we hold: ${totals.papers} papers across ${totals.subjects} ` +
+          `subjects and ${totals.sessions} exam sittings, from the ${schemes} ` +
+          `schemes. Every one is a free PDF, no sign-up. We are still collecting, ` +
+          `so some subjects and semesters are missing — the filters below show ` +
+          `exactly what is here.`
         }
       />
 

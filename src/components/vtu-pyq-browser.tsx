@@ -6,32 +6,31 @@ import { Badge, Card } from '@/components/ui'
 import type { VtuPaper } from '@/lib/pyq'
 
 /**
- * Search and filter over the 59 VTU first-year papers, styled after the
+ * Search and filter over the VTU question papers, styled after the
  * `/coverage` "Check your branch" widget.
  *
  * **Every option here comes from the rows, and nothing is keyed to a value the
- * code knows about.** The branch list is the distinct `streams` tokens the
- * papers actually carry; the semester list is the distinct `semesters` tokens.
- * A branch added to `subjects` tomorrow shows up in the dropdown, and a paper
- * recorded under a semester format nobody anticipated still renders, because
- * the only thing this file does to a value is decide whether to prefix it with
- * the word "Semester". There is no map of known branches and no list of known
- * semesters to forget to update.
+ * code knows about.** The scheme list is the distinct `scheme_name` values the
+ * papers carry, the branch list the distinct `streams` tokens, the semester list
+ * the distinct `semesters` tokens. A scheme added to `py_qp` tomorrow shows up in
+ * the dropdown, and a paper recorded under a semester format nobody anticipated
+ * still renders, because the only thing this file does to a value is decide
+ * whether to prefix it with the word "Semester". There is no map of known
+ * schemes, branches or semesters to forget to update.
  *
- * That is why the two dimensions are read off `subjects` rather than joined to
- * the `branches` table: `subjects.stream` speaks its own vocabulary (CSE, ECE,
- * EEE, CV, ME) and `branches.code` has only some of those (CV, ME) — joining
+ * A Scheme dropdown was absent until 2026-10-07. That was right when it was
+ * written — all 59 papers were 2025 CBCS and it would have had one option — but
+ * the py_qp backfill that day added 2022-scheme papers, and with two schemes on
+ * the page a filter is the only way to tell them apart.
+ *
+ * Branch is read off `streams` (from `subjects.stream`) rather than joined to
+ * the `branches` table: the two speak different vocabularies — `subjects.stream`
+ * has CSE, ECE, EEE, CV and ME, `branches.code` has only CV and ME — so joining
  * would silently drop the branches that do not match.
  *
- * Two fields the request named are deliberately absent. A Scheme dropdown,
- * because all 59 papers are 2025 CBCS and it would have one option. And a
- * Branch dropdown built on `subjects.branch`, because that column is NULL on
- * every one of these first-year subjects — what varies is the stream, which is
- * what this uses.
- *
- * Filtering is client-side over rows the server already sent. There is no
- * second request and no URL state: 59 rows is nothing to hold in memory, and a
- * query string would be a second source of truth.
+ * Filtering is client-side over rows the server already sent. There is no second
+ * request and no URL state: a few hundred rows is nothing to hold in memory, and
+ * a query string would be a second source of truth.
  */
 
 /** Matches `coverage-checker.tsx`, so the two widgets read as one thing. */
@@ -63,16 +62,22 @@ const semesterLabel = (value: string) =>
 
 export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
   const [query, setQuery] = useState('')
+  const [scheme, setScheme] = useState('')
   const [branch, setBranch] = useState('')
   const [semester, setSemester] = useState('')
 
   /*
-   * Options are read off the papers rather than listed by hand, so a dropdown
-   * can never offer a value that matches nothing — and a stream that appears in
-   * tomorrow's data appears in the dropdown without anyone remembering to add
-   * it. Ordered by how many papers each holds, which floats "All branches"
-   * (23 papers) to the top and is deterministic regardless of row order.
+   * Ordered by `scheme_code`, which runs newest-first — `1` is 2025 CBCS, `2` is
+   * 2022 CBCS — so the scheme a current student is on is the first option. The
+   * branch dropdown below is ordered by how many papers each holds instead,
+   * which is what floats "All branches" to the top there.
    */
+  const schemes = useMemo(() => {
+    const byCode = new Map<string, string>()
+    for (const paper of papers) byCode.set(paper.scheme_code, paper.scheme_name)
+    return [...byCode.entries()].sort((a, b) => a[0].localeCompare(b[0]))
+  }, [papers])
+
   const branches = useMemo(() => {
     const counts = new Map<string, number>()
     for (const paper of papers) {
@@ -106,27 +111,36 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
         return false
       }
 
+      if (scheme && paper.scheme_code !== scheme) return false
+
       if (semester && !tokens(paper.semesters).includes(semester)) return false
 
       if (branch && !tokens(paper.streams).includes(branch)) return false
 
       return true
     })
-  }, [papers, query, branch, semester])
+  }, [papers, query, scheme, branch, semester])
 
-  // Grouped by subject, as the page has always rendered it, so a student scans
-  // for their subject once instead of hunting a code in a flat list.
+  /*
+   * Keyed by scheme *and* subject code, not by subject name. The RPC groups the
+   * same way, and for the same reason: a 2022 and a 2025 paper can share a
+   * subject name and even a filename, so keying on the name alone would merge
+   * two schemes' papers into one card and print one of them under the other's
+   * code — the merge this page's index was rewritten to stop doing.
+   */
   const bySubject = useMemo(() => {
     const map = new Map<string, VtuPaper[]>()
     for (const paper of filtered) {
-      const list = map.get(paper.subject_name) ?? []
+      const key = `${paper.scheme_code}|${paper.subject_code}`
+      const list = map.get(key) ?? []
       list.push(paper)
-      map.set(paper.subject_name, list)
+      map.set(key, list)
     }
     return [...map.entries()]
   }, [filtered])
 
-  const active = query.trim() !== '' || branch !== '' || semester !== ''
+  const active =
+    query.trim() !== '' || scheme !== '' || branch !== '' || semester !== ''
 
   return (
     <>
@@ -136,10 +150,11 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
           Find your paper
         </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-          Search by subject or code, or narrow to your branch and semester.
+          Search by subject or code, or narrow to your scheme, branch and
+          semester.
         </p>
 
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-medium">
               Subject or code
@@ -152,6 +167,22 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
               autoComplete="off"
               className={fieldClass}
             />
+          </label>
+
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-medium">Scheme</span>
+            <select
+              value={scheme}
+              onChange={(event) => setScheme(event.target.value)}
+              className={fieldClass}
+            >
+              <option value="">Any scheme</option>
+              {schemes.map(([code, name]) => (
+                <option key={code} value={code}>
+                  {name}
+                </option>
+              ))}
+            </select>
           </label>
 
           <label className="block">
@@ -203,6 +234,7 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
               type="button"
               onClick={() => {
                 setQuery('')
+                setScheme('')
                 setBranch('')
                 setSemester('')
               }}
@@ -224,33 +256,41 @@ export function VtuPyqBrowser({ papers }: { papers: VtuPaper[] }) {
             </p>
           </Card>
         ) : (
-          bySubject.map(([name, subjectPapers]) => (
-            <Card key={name}>
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-semibold leading-snug">{name}</p>
-                <Badge tone="neutral">{subjectPapers[0].subject_code}</Badge>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {subjectPapers[0].streams} ·{' '}
-                {semesterLabel(subjectPapers[0].semesters)}
-              </p>
-              <ul className="mt-3 space-y-2">
-                {subjectPapers.map((paper) => (
-                  <li key={paper.url}>
-                    <a
-                      href={paper.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
-                    >
-                      {paper.sessions}
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          ))
+          bySubject.map(([key, subjectPapers]) => {
+            const paper = subjectPapers[0]
+            return (
+              <Card key={key}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <p className="font-semibold leading-snug">
+                    {paper.subject_name}
+                  </p>
+                  <Badge tone="neutral">{paper.subject_code}</Badge>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {paper.scheme_name} · {paper.streams} ·{' '}
+                  {semesterLabel(paper.semesters)}
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {subjectPapers.map((p) => (
+                    <li key={p.url}>
+                      <a
+                        href={p.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-sm font-medium text-brand hover:underline"
+                      >
+                        {p.sessions}
+                        <ExternalLink
+                          className="h-3.5 w-3.5"
+                          aria-hidden="true"
+                        />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )
+          })
         )}
       </div>
     </>
