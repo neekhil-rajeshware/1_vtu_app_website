@@ -11,6 +11,7 @@ const SUBJECTS = [
   'Report a mistake in the content',
   'Missing question paper or syllabus',
   'Bug report',
+  'Autonomous college enquiry',
   'Delete my account',
   'Copyright / takedown',
   'Partnership or feedback',

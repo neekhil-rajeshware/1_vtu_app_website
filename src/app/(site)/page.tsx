@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { AccountAndData } from '@/components/sections/account-and-data'
+import { AutonomousApp } from '@/components/sections/autonomous-app'
 import { BlogTeaser } from '@/components/sections/blog-teaser'
 import { ClosingCta } from '@/components/sections/closing-cta'
 import { FaqSection } from '@/components/sections/faq'
@@ -133,6 +134,16 @@ export default async function HomePage() {
       {visible('blog') ? <BlogTeaser section={sections.blog} posts={posts} /> : null}
       {visible('faq') ? (
         <FaqSection section={sections.faq} faqs={faqs} grouped emitJsonLd />
+      ) : null}
+      {/*
+        Last before the closing CTA: this is the one band on the page that is
+        not about the app the page is selling, so it reads as an aside rather
+        than interrupting the pitch. Position is the JSX below, not the row's
+        `sort_order` — that column only orders the list in Admin → Home page,
+        which is why it is kept in step with this order by hand.
+      */}
+      {visible('autonomous') ? (
+        <AutonomousApp section={sections.autonomous} settings={settings} />
       ) : null}
       {visible('cta') ? (
         <ClosingCta section={sections.cta} settings={settings} />

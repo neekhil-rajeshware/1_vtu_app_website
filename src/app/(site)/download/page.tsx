@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ArrowRight, Download, QrCode, ShieldCheck, Smartphone, Sparkles } from 'lucide-react'
 import { JsonLd } from '@/components/json-ld'
+import { AutonomousApp } from '@/components/sections/autonomous-app'
 import { Badge, ButtonLink, Card, Container, EmptyState, PageHeader, Section, SectionHeading } from '@/components/ui'
 import { getVersions } from '@/lib/content'
 import { mobileApplicationJsonLd, pageMetadata } from '@/lib/seo'
@@ -119,6 +120,14 @@ export default async function DownloadPage() {
           </Card>
         </Container>
       </Section>
+
+      {/*
+        Straight after the install block, because this is the page where the
+        mistake gets made. An autonomous-college student who installs the app
+        above finds every subject filtered to a syllabus their college does not
+        follow, and nothing on the page told them a different app was coming.
+      */}
+      <AutonomousApp settings={settings} />
 
       {/*
         The setup guide sits between installing and the changelog on purpose:
