@@ -130,13 +130,18 @@ export function SiteFooter({ settings }: { settings: AllSettings }) {
           </p>
         ) : null}
 
-        <div className="mt-6 flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        {/*
+          No "Admin" link here, deliberately. It used to sit on this line and it
+          was the only thing on the site pointing at /admin, which robots.txt
+          disallows -- so every crawl followed it into a wall and Search Console
+          filed a fresh "Blocked by robots.txt" against the site each time. A
+          private dashboard does not belong in public HTML. The owner reaches it
+          at /admin directly; it is a bookmark, not a link.
+        */}
+        <div className="mt-6 border-t border-border pt-6 text-xs text-muted-foreground">
           <p>
             © {year} {footer.copyright || name}. All rights reserved.
           </p>
-          <Link href="/admin" className="transition-colors hover:text-foreground">
-            Admin
-          </Link>
         </div>
       </Container>
     </footer>
