@@ -10,6 +10,7 @@ import { ClosingCta } from '@/components/sections/closing-cta'
 import { FaqSection } from '@/components/sections/faq'
 import { ButtonLink, Container, Section } from '@/components/ui'
 import {
+  FEATURE_HUBS,
   getFeatureBySlug,
   getFeatureFaqs,
   getFeaturesWithPages,
@@ -94,6 +95,14 @@ export default async function FeaturePage({ params }: Params) {
   // Usually empty for a feature nothing has been written about yet, and an empty
   // list renders nothing rather than a filler link.
   const postsHere = postsForFeature(feature, posts).slice(0, 3)
+
+  /*
+   * The data hub this feature feeds into, if it has one — the GATE papers page
+   * links to the GATE papers. Only three features have a hub, and the other
+   * fifteen render nothing: a "related" list padded out to three items is how
+   * an internal link stops meaning anything.
+   */
+  const hubs = FEATURE_HUBS[feature.slug] ?? []
 
   const crumbs = [
     { name: 'Home', path: '/' },
@@ -217,6 +226,27 @@ export default async function FeaturePage({ params }: Params) {
                             className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
                           />
                           <span>{item.title}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
+              {hubs.length > 0 ? (
+                <div className="rounded-2xl border border-border bg-card p-5">
+                  <h2 className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Go deeper
+                  </h2>
+                  <ul className="mt-4 space-y-3">
+                    {hubs.map((hub) => (
+                      <li key={hub.href}>
+                        <Link
+                          href={hub.href}
+                          className="group flex items-start gap-2.5 text-sm font-semibold leading-snug transition-colors hover:text-primary dark:hover:text-accent-foreground"
+                        >
+                          <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span>{hub.label}</span>
                         </Link>
                       </li>
                     ))}

@@ -411,6 +411,72 @@ const TAG_FEATURE_SLUG: Record<string, string> = {
   rag: 'ai-professor',
 }
 
+/** A link from a content page to one of the site's data hubs. */
+export type HubLink = { href: string; label: string }
+
+/*
+ * The data hubs are the pages that can actually rank for the phrases people
+ * search — "VTU question papers", "GATE previous year papers", "VTU result
+ * date". Until now the only thing pointing at them was the nav bar, which puts
+ * the same link on all 59 pages and is discounted accordingly. A feature page
+ * about GATE papers linked to three other feature pages and never to the GATE
+ * papers themselves, which is simply an omission.
+ *
+ * Both maps are written down rather than derived, for the same reason
+ * `TAG_FEATURE_SLUG` is: "GATE Question Papers" and `/gate-pyqs` share no
+ * substring, and no tag on any post says "hub".
+ *
+ * No counts in the labels, deliberately. "481 papers" is true today and is read
+ * live on the hub page itself; typing it here would make it a number that goes
+ * stale in a file nobody re-reads.
+ */
+
+/** Hub pages by feature slug, rendered on the feature's own page. */
+export const FEATURE_HUBS: Record<string, HubLink[]> = {
+  'gate-question-papers': [
+    { href: '/gate-pyqs', label: 'Every GATE paper and answer key, 2007 onwards' },
+  ],
+  'vtu-syllabus': [
+    { href: '/vtu-pyqs', label: 'Past papers for the subjects in your syllabus' },
+    { href: '/coverage', label: 'Which schemes, branches and syllabuses are covered' },
+  ],
+  'vtu-results': [
+    { href: '/vtu-result-dates', label: 'When each VTU result is declared' },
+  ],
+}
+
+/**
+ * Hub pages by blog tag, rendered at the foot of the post.
+ *
+ * Keys are tags that exist on real posts — checked against the live pages, not
+ * assumed. Kept to tags whose hub is what the reader would want next: a post
+ * about revaluation should end somewhere that answers "so when is my result?",
+ * and a post about the 2025 scheme should end at the papers for it.
+ */
+export const TAG_HUBS: Record<string, HubLink[]> = {
+  results: [{ href: '/vtu-result-dates', label: 'VTU result dates' }],
+  revaluation: [{ href: '/vtu-result-dates', label: 'Revaluation deadlines' }],
+  syllabus: [{ href: '/vtu-pyqs', label: 'Past papers for these subjects' }],
+  '2025 scheme': [{ href: '/coverage', label: 'Every subject covered on this scheme' }],
+  'vtu 2025 scheme': [
+    { href: '/coverage', label: 'Every subject covered on this scheme' },
+  ],
+}
+
+/** The hub links a post earns from its tags, deduped by target. */
+export function hubsForPost(post: Post): HubLink[] {
+  const seen = new Set<string>()
+  const out: HubLink[] = []
+  for (const tag of post.tags ?? []) {
+    for (const hub of TAG_HUBS[tag.trim().toLowerCase()] ?? []) {
+      if (seen.has(hub.href)) continue
+      seen.add(hub.href)
+      out.push(hub)
+    }
+  }
+  return out
+}
+
 /**
  * The feature pages a post should link to, in the order `features` was passed.
  *

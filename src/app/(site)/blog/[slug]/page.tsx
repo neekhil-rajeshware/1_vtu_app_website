@@ -12,6 +12,7 @@ import {
   getFeaturesWithPages,
   getPostBySlug,
   getPublishedPosts,
+  hubsForPost,
 } from '@/lib/content'
 import { absoluteUrl, breadcrumbJsonLd, browserTitle } from '@/lib/seo'
 import { appName, getSettings, publicWebsiteUrl } from '@/lib/settings'
@@ -84,6 +85,14 @@ export default async function PostPage({ params }: Params) {
   const url = absoluteUrl(base, `/blog/${post.slug}`)
 
   const postFeatures = featuresForPost(post, features)
+
+  /*
+   * The data hub this post's tags point at — a post about revaluation ends on
+   * the page that says when results are declared. Tag-driven rather than
+   * hand-written into the post body so it holds for every post carrying the
+   * tag, and stays empty for the twenty that carry none.
+   */
+  const postHubs = hubsForPost(post)
 
   /*
    * Related by shared tag, not by recency. "The three newest posts" is not a
@@ -209,6 +218,27 @@ export default async function PostPage({ params }: Params) {
                 className="prose-brand"
                 dangerouslySetInnerHTML={{ __html: post.content }}
               />
+
+              {postHubs.length > 0 ? (
+                <div className="mt-8 rounded-2xl border border-border bg-card p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground">
+                    Go deeper
+                  </p>
+                  <ul className="mt-3 space-y-2.5">
+                    {postHubs.map((hub) => (
+                      <li key={hub.href}>
+                        <Link
+                          href={hub.href}
+                          className="group inline-flex items-center gap-2 text-sm font-semibold text-primary dark:text-accent-foreground"
+                        >
+                          {hub.label}
+                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
             </div>
           </Container>
         </Section>
