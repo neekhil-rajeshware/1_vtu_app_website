@@ -1,3 +1,4 @@
+import Script from 'next/script'
 import { AnnouncementBar } from '@/components/announcement-bar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
@@ -25,6 +26,19 @@ export default async function SiteLayout({
       />
       <main className="flex-1">{children}</main>
       <SiteFooter settings={settings} />
+
+      {/*
+        Monetag (Multitag, zone 299926). Deliberately in the public layout, not
+        the root layout: the root also wraps `/admin`, and a third-party ad
+        script has no business running on a signed-in dashboard. The `sw.js`
+        Monetag uses for verification and web push is in `public/sw.js`.
+      */}
+      <Script
+        src="https://quge5.com/88/tag.min.js"
+        data-zone="299926"
+        data-cfasync="false"
+        strategy="afterInteractive"
+      />
     </>
   )
 }
