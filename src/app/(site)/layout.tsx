@@ -1,4 +1,3 @@
-import Script from 'next/script'
 import { AnnouncementBar } from '@/components/announcement-bar'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
@@ -32,12 +31,16 @@ export default async function SiteLayout({
         the root layout: the root also wraps `/admin`, and a third-party ad
         script has no business running on a signed-in dashboard. The `sw.js`
         Monetag uses for verification and web push is in `public/sw.js`.
+
+        A raw element, not `next/script`: `afterInteractive` injects the tag
+        after hydration, so it is absent from the HTML a verifier fetches.
+        React 19 hoists this into <head>, which is where Monetag asks for it.
       */}
-      <Script
+      <script
         src="https://quge5.com/88/tag.min.js"
         data-zone="299926"
         data-cfasync="false"
-        strategy="afterInteractive"
+        async
       />
     </>
   )
