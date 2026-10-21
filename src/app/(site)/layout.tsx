@@ -42,6 +42,19 @@ export default async function SiteLayout({
         data-cfasync="false"
         async
       />
+
+      {/*
+        Monetag vignette banner (zone 12090957). The vendor's snippet is an
+        IIFE that injects its own <script>, so it can only be inline. It runs
+        when the browser parses the HTML, before hydration — which is what the
+        dashboard's install check looks for.
+      */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html:
+            "(function(s){s.dataset.zone='12090957',s.src='https://n6wxm.com/vignette.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))",
+        }}
+      />
     </>
   )
 }
