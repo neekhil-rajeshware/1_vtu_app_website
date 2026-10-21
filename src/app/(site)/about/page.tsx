@@ -1,18 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Heart, Mail, ShieldCheck, Target } from 'lucide-react'
+import { Building2, Heart, Mail, ShieldCheck, Target } from 'lucide-react'
 import { ClosingCta } from '@/components/sections/closing-cta'
 import { StatsStrip } from '@/components/sections/stats-strip'
 import { buttonClass, Card, Container, PageHeader, Section } from '@/components/ui'
 import { getStats } from '@/lib/content'
 import { pageMetadata } from '@/lib/seo'
-import { getSettings } from '@/lib/settings'
+import { appName, developerAddress, getSettings } from '@/lib/settings'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
-    title: 'About',
+    title: 'About One Ed Tech',
     description:
-      'Why we built the app, who it is for, and what it does with your data. An independent study companion for VTU engineering students.',
+      'One Ed Tech is the independent studio behind One VTU — who builds it, who it is for, and what the app does with your data.',
     path: '/about',
   })
 }
@@ -37,7 +37,9 @@ const VALUES = [
 
 export default async function AboutPage() {
   const [settings, stats] = await Promise.all([getSettings(), getStats()])
-  const { about, contact, footer } = settings
+  const { about, contact, footer, developer } = settings
+  const name = appName(settings)
+  const address = developerAddress(developer)
 
   return (
     <>
@@ -76,6 +78,64 @@ export default async function AboutPage() {
           </div>
 
           <div className="space-y-4">
+            {/*
+              The company block. Before this, the only place the business was
+              named was the copyright line, and the legal pages called the
+              publisher by a person's name — which is exactly what an ad network
+              or payment provider checks the site against. It reads from the
+              same `developer` row the legal pages use, so the two cannot drift.
+            */}
+            <Card>
+              <h3 className="flex items-center gap-2 text-sm font-bold">
+                <Building2 className="h-4 w-4 text-primary dark:text-accent-foreground" />
+                The company
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {name} is published by{' '}
+                <strong>{developer.legal_name || 'an independent studio'}</strong>
+                , an independent app studio based in {developer.city || 'India'}.
+                It is owned and run by Neekhil — a solo developer who designs,
+                builds and supports every app the studio ships. Alongside {name},
+                the studio is building One VTU Autonomous, One India University
+                and One India PUC.
+              </p>
+
+              <dl className="mt-4 space-y-2.5 border-t border-border pt-4 text-sm">
+                {contact.support_email ? (
+                  <div className="flex gap-3">
+                    <dt className="w-16 shrink-0 text-muted-foreground">Email</dt>
+                    <dd className="min-w-0 break-all">
+                      <a
+                        href={`mailto:${contact.support_email}`}
+                        className="font-medium text-primary hover:underline dark:text-accent-foreground"
+                      >
+                        {contact.support_email}
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
+                {developer.phone ? (
+                  <div className="flex gap-3">
+                    <dt className="w-16 shrink-0 text-muted-foreground">Phone</dt>
+                    <dd>
+                      <a
+                        href={`tel:${developer.phone.replace(/\s+/g, '')}`}
+                        className="font-medium text-primary hover:underline dark:text-accent-foreground"
+                      >
+                        {developer.phone}
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
+                {address ? (
+                  <div className="flex gap-3">
+                    <dt className="w-16 shrink-0 text-muted-foreground">Address</dt>
+                    <dd className="leading-relaxed">{address}</dd>
+                  </div>
+                ) : null}
+              </dl>
+            </Card>
+
             <Card>
               <h3 className="text-sm font-bold">Get in touch</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">

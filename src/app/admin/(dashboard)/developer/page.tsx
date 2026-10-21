@@ -99,7 +99,7 @@ export default async function AdminDeveloperPage() {
                 type: 'text',
                 half: true,
                 placeholder: 'Your full name, or your company name',
-                help: 'Use the same name as your Play Console developer account.',
+                help: 'The company name. Ad networks and payment providers compare this with your site; the app brand name lives in Site settings.',
               },
               {
                 name: 'email',

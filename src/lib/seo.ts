@@ -1,5 +1,11 @@
 import type { Metadata } from 'next'
-import { appName, getSettings, publicWebsiteUrl, type AllSettings } from '@/lib/settings'
+import {
+  appName,
+  developerAddress,
+  getSettings,
+  publicWebsiteUrl,
+  type AllSettings,
+} from '@/lib/settings'
 
 /**
  * Metadata and structured data for the public pages, in one place.
@@ -131,14 +137,13 @@ export function breadcrumbJsonLd(base: string, crumbs: Crumb[]) {
  * Who publishes the app. Emitted site-wide from the root layout so every page
  * carries it.
  *
- * Deliberately thin: it names the organisation, points at the logo, and lists
- * the profiles the footer already links to, and nothing else. A
- * `PostalAddress` or `telephone` here would have to come from the `developer`
- * settings row, which ships empty by design — and an `Organization` with blank
- * fields is worse than one without them.
+ * `name` is the trading brand people search for; `legalName` is the company an
+ * ad network or payment provider checks against the site, and both come from
+ * settings so they cannot drift from the legal pages. Every optional field is
+ * spread conditionally: a blank `PostalAddress` is worse than no address.
  */
 export function organizationJsonLd(settings: AllSettings, base: string) {
-  const { site, social } = settings
+  const { site, social, developer } = settings
 
   /*
    * `sameAs` is how a search engine ties the YouTube, Instagram and other
@@ -148,6 +153,7 @@ export function organizationJsonLd(settings: AllSettings, base: string) {
    * crawler can read.
    */
   const sameAs = Object.values(social).filter(Boolean)
+  const address = developerAddress(developer)
 
   return {
     '@context': 'https://schema.org',
@@ -158,6 +164,27 @@ export function organizationJsonLd(settings: AllSettings, base: string) {
     '@id': `${base}/#organization`,
     name: appName(settings),
     url: base,
+    ...(developer.legal_name ? { legalName: developer.legal_name } : {}),
+    ...(developer.email ? { email: developer.email } : {}),
+    ...(developer.phone ? { telephone: developer.phone } : {}),
+    ...(address
+      ? {
+          address: {
+            '@type': 'PostalAddress',
+            ...(developer.address_line1
+              ? {
+                  streetAddress: [developer.address_line1, developer.address_line2]
+                    .filter(Boolean)
+                    .join(', '),
+                }
+              : {}),
+            ...(developer.city ? { addressLocality: developer.city } : {}),
+            ...(developer.state ? { addressRegion: developer.state } : {}),
+            ...(developer.postal_code ? { postalCode: developer.postal_code } : {}),
+            ...(developer.country ? { addressCountry: developer.country } : {}),
+          },
+        }
+      : {}),
     ...(site.logo_url ? { logo: site.logo_url } : {}),
     ...(site.short_description ? { description: site.short_description } : {}),
     ...(sameAs.length > 0 ? { sameAs } : {}),

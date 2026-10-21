@@ -30,7 +30,7 @@ const COLUMNS: Array<{ title: string; links: Array<{ href: string; label: string
   {
     title: 'Company',
     links: [
-      { href: '/about', label: 'About us' },
+      { href: '/about', label: 'About One Ed Tech' },
       { href: '/contact', label: 'Contact' },
       { href: '/support', label: 'Support the developer' },
       { href: '/community-guidelines', label: 'Community guidelines' },

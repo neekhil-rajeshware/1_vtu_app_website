@@ -1,13 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Clock, Flag, Mail } from 'lucide-react'
+import { Building2, Clock, Flag, Mail } from 'lucide-react'
 import { ContactForm } from '@/components/contact-form'
 import { FaqSection } from '@/components/sections/faq'
 import { SocialIcon, SOCIAL_LABELS, type SocialNetwork } from '@/components/social-icon'
 import { Card, Container, PageHeader, Section } from '@/components/ui'
 import { getFaqs } from '@/lib/content'
 import { pageMetadata } from '@/lib/seo'
-import { getSettings } from '@/lib/settings'
+import { appName, developerAddress, getSettings } from '@/lib/settings'
 
 export async function generateMetadata(): Promise<Metadata> {
   return pageMetadata({
@@ -42,7 +42,9 @@ export default async function ContactPage({
     getFaqs(),
     searchParams,
   ])
-  const { contact, social } = settings
+  const { contact, developer, social } = settings
+  const address = developerAddress(developer)
+  const name = appName(settings)
   const activeSocials = SOCIAL_ORDER.filter((key) => social[key])
   const supportFaqs = faqs.filter((faq) => faq.category === 'Support')
 
@@ -74,6 +76,52 @@ export default async function ContactPage({
                 >
                   {contact.support_email}
                 </a>
+              </Card>
+            ) : null}
+
+            {developer.legal_name || address ? (
+              <Card>
+                <h2 className="flex items-center gap-2 text-sm font-bold">
+                  <Building2 className="h-4 w-4 text-primary dark:text-accent-foreground" />
+                  Business details
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  {name} is published by the studio below. Postal mail and
+                  formal notices can go to this address.
+                </p>
+                <dl className="mt-3 space-y-2 text-sm">
+                  {developer.legal_name ? (
+                    <div className="flex gap-3">
+                      <dt className="w-16 shrink-0 text-muted-foreground">
+                        Company
+                      </dt>
+                      <dd className="font-medium">{developer.legal_name}</dd>
+                    </div>
+                  ) : null}
+                  {address ? (
+                    <div className="flex gap-3">
+                      <dt className="w-16 shrink-0 text-muted-foreground">
+                        Address
+                      </dt>
+                      <dd className="leading-relaxed">{address}</dd>
+                    </div>
+                  ) : null}
+                  {developer.phone ? (
+                    <div className="flex gap-3">
+                      <dt className="w-16 shrink-0 text-muted-foreground">
+                        Phone
+                      </dt>
+                      <dd>
+                        <a
+                          href={`tel:${developer.phone.replace(/\s+/g, '')}`}
+                          className="font-medium text-primary hover:underline dark:text-accent-foreground"
+                        >
+                          {developer.phone}
+                        </a>
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
               </Card>
             ) : null}
 

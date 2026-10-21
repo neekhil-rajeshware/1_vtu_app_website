@@ -364,6 +364,23 @@ export function fillPlaceholders(html: string, settings: AllSettings): string {
   return out
 }
 
+/**
+ * The postal address as one line, skipping whatever was left blank. Shared so
+ * the legal pages, /about and the Organization JSON-LD cannot disagree.
+ */
+export function developerAddress(developer: DeveloperSettings): string {
+  return [
+    developer.address_line1,
+    developer.address_line2,
+    [developer.city, developer.postal_code].filter(Boolean).join(' '),
+    developer.state,
+    developer.country,
+  ]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join(', ')
+}
+
 /** Every placeholder the legal pages may use, with the value it resolves to. */
 export function placeholderValues(settings: AllSettings): Record<string, string> {
   const { site, contact, footer, developer } = settings
@@ -377,16 +394,7 @@ export function placeholderValues(settings: AllSettings): Record<string, string>
       developer.legal_name || footer.copyright || site.name || DEFAULT_APP_NAME,
     '[DEVELOPER_EMAIL]': developer.email || email,
     '[DEVELOPER_PHONE]': developer.phone.trim(),
-    '[DEVELOPER_ADDRESS]': [
-      developer.address_line1,
-      developer.address_line2,
-      [developer.city, developer.postal_code].filter(Boolean).join(' '),
-      developer.state,
-      developer.country,
-    ]
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .join(', '),
+    '[DEVELOPER_ADDRESS]': developerAddress(developer),
     '[GOVERNING_LAW]': developer.governing_law.trim(),
     '[JURISDICTION]': developer.jurisdiction.trim(),
   }
